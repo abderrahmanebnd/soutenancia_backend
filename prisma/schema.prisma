@@ -9,10 +9,11 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  firstName String
-  lastName  String?
-  email     String   @unique
-  role      Role     @default(STUDENT)
+  firstName String   @db.VarChar(40)
+  lastName  String?  @db.VarChar(40)
+  password  String
+  email     String   @unique @db.VarChar(100)
+  role      Role     @default(student)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   Student   Student?
@@ -22,9 +23,9 @@ model Student {
   id               String         @id @default(cuid())
   userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enrollmentNumber String         @unique
-  year             Int
-  speciality       String?
+  enrollmentNumber String?        @unique @db.VarChar(40)
+  year             Int?
+  speciality       String?        @db.VarChar(40)
   skills           StudentSkill[]
 
   createdAt DateTime @default(now())
@@ -33,7 +34,7 @@ model Student {
 
 model Skill {
   id        String         @id @default(cuid())
-  name      String         @unique
+  name      String         @unique @db.VarChar(40)
   students  StudentSkill[]
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
@@ -50,8 +51,10 @@ model StudentSkill {
 }
 
 enum Role {
-  STUDENT
-  TEACHER
-  ENTREPRISE
-  ADMIN
+  student
+  teacher
+  admin
+  entreprise
 }
+
+// TODO // -- sign up ,-- login , -- hash the password , --test
