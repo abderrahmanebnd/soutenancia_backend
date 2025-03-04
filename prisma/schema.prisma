@@ -56,5 +56,3 @@ enum Role {
   admin
   entreprise
 }
-
-// TODO //  ,-- login 
