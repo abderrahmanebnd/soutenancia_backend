@@ -33,6 +33,7 @@ const studentValidationSchema = z.object({
     .min(3, "Speciality must be at least 3 characters")
     .optional(),
 });
+
 const prisma = new PrismaClient().$extends({
   model: {
     user: {
@@ -69,6 +70,16 @@ const prisma = new PrismaClient().$extends({
         }
 
         return await prisma.user.update(args);
+      },
+    },
+  },
+  result: {
+    student: {
+      isCompletedProfile: {
+        needs: { skills: true },
+        compute(student) {
+          return student.skills.length > 0;
+        },
       },
     },
   },
