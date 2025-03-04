@@ -73,3 +73,24 @@ exports.signup = catchAsync(async (req, res, next) => {
 
   createSendToken(newUser, 201, res);
 });
+
+exports.login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  // 1) Check if email and password exist
+  if (!email || !password) {
+    return next(new AppError("Please provide email and password", 400));
+  }
+  // 2) Check if the user exists and the password is correct
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!user || !(await prisma.user?.correctPassword(password, user.password))) {
+    return next(new AppError("Incorrect email or password", 401)); //unauthorized
+  }
+  // 3) If everything ok, send token to client
+  createSendToken(user, 200, res);
+});

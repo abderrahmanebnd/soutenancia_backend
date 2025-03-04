@@ -19,6 +19,10 @@ const prisma = new PrismaClient().$extends({
         }
         return await prisma.user.update(args);
       },
+
+      async correctPassword(candidatePassword, userPassword) {
+        return await bcrypt.compare(candidatePassword, userPassword);
+      },
     },
   },
 });
