@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: soutenancia
+      POSTGRES_PASSWORD: Soutenancia2025
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      # Cette URL sera utilisée par Prisma (elle pointe vers le service db défini ci-dessus)
+      DATABASE_URL: postgresql://soutenancia:Soutenancia2025@db:5432/mydb
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    # La commande démarre le backend (définie dans le Dockerfile)
+    # CMD est déjà géré par le Dockerfile, ici c'est juste pour information
+
+volumes:
+  postgres_data:
