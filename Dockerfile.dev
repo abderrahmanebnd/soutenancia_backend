@@ -1,0 +1,18 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+RUN npm install -g nodemon
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npx prisma generate
+
+EXPOSE 3000
+
+# Option de polling correctement passée à nodemon
+CMD ["nodemon", "--legacy-watch",  "server.js"]

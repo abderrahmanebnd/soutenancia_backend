@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "nodemon --legacy-watch server.js",
     "start:prod": "cross-env NODE_ENV=production nodemon server.js"
   },
   "keywords": [],
@@ -23,6 +23,10 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
     "prisma": "^6.4.1",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
     "xss-clean": "^0.1.4",
     "zod": "^3.24.2"
   }

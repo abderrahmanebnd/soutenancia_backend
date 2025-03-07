@@ -21,6 +21,7 @@ model User {
 }
 
 model Student {
+  userId           String         @id @default(cuid())
   // id               String         @id @default(cuid())
   userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -57,3 +58,5 @@ enum Role {
   admin
   entreprise
 }
+}
+
