@@ -7,7 +7,8 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   // Commentez ou supprimez la ligne directUrl si vous n'en avez pas besoin
-  // directUrl = env("DIRECT_URL") }
+  // directUrl = env("DIRECT_URL") 
+  }
 
 
 model User {
