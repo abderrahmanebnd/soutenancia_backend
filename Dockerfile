@@ -1,10 +1,23 @@
-FROM node:18
+# Étape 1 : Utiliser une image de base Node.js
+FROM node:18-alpine
+
+# Étape 2 : Définir le répertoire de travail
 WORKDIR /app
+
+# Étape 3 : Copier les fichiers de package.json et package-lock.json
 COPY package*.json ./
-RUN npm install
+
+# Étape 4 : Installer les dépendances de production
+RUN npm install --production
+
+# Étape 5 : Copier le reste du code de l'application
 COPY . .
-RUN npx prisma generate
-#port 3000
+
+# Étape 6 : Appliquer les migrations Prisma
+RUN npx prisma generate && npx prisma migrate deploy
+
+# Étape 7 : Exposer le port
 EXPOSE 3000
-#Cette commande exécute les migrations (si des changements de schéma ont été définis) puis démarre ton serveur
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+
+# Étape 8 : Lancer l'application
+CMD ["node", "server.js"]
