@@ -27,5 +27,7 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
+    "xss-clean": "^0.1.4",
+    "zod": "^3.24.2"
   }
 }
