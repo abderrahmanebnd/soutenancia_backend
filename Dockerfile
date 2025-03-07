@@ -14,7 +14,7 @@ RUN npm install --production
 COPY . .
 
 # Étape 6 : Appliquer les migrations Prisma (avec un délai pour éviter un problème de connexion)
-RUN sleep 10 && npx prisma generate && npx prisma migrate deploy || echo "Prisma migrate failed but continuing..."
+RUN sleep 10 && npx prisma generate && npx prisma db push || echo "Prisma migrate failed but continuing..."
 
 
 # Étape 7 : Exposer le port
