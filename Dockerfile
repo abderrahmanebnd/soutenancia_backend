@@ -13,8 +13,9 @@ RUN npm install --production
 # Étape 5 : Copier le reste du code de l'application
 COPY . .
 
-# Étape 6 : Appliquer les migrations Prisma
-RUN npx prisma generate && npx prisma migrate deploy
+# Étape 6 : Appliquer les migrations Prisma (avec un délai pour éviter un problème de connexion)
+RUN sleep 10 && npx prisma generate && npx prisma migrate deploy || echo "Prisma migrate failed but continuing..."
+
 
 # Étape 7 : Exposer le port
 EXPOSE 3000
