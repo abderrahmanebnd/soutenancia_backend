@@ -1,15 +1,11 @@
 generator client {
   provider = "prisma-client-js"
-   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  // Commentez ou supprimez la ligne directUrl si vous n'en avez pas besoin
-  // directUrl = env("DIRECT_URL") 
-  }
-
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
   id        String   @id @default(cuid())
@@ -24,8 +20,7 @@ model User {
 }
 
 model Student {
-  id               String         @id @default(cuid())
-  userId           String         @unique
+  userId           String         @id @default(cuid())
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollmentNumber String?        @unique @db.VarChar(40)
   year             Int?
@@ -48,7 +43,7 @@ model StudentSkill {
   id        String  @id @default(cuid())
   studentId String
   skillId   String
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [userId], onDelete: Cascade)
   skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, skillId]) // the student can have the same skill only once
@@ -60,5 +55,3 @@ enum Role {
   admin
   entreprise
 }
-
-// TODO //  ,-- login 
