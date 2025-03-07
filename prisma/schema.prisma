@@ -23,7 +23,7 @@ model User {
 model Student {
   userId           String         @id @default(cuid())
   // id               String         @id @default(cuid())
-  userId           String         @unique
+  // userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollmentNumber String?        @unique @db.VarChar(40)
   year             Int?
@@ -58,5 +58,3 @@ enum Role {
   admin
   entreprise
 }
-}
-
