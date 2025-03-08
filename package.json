@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "nodemon --legacy-watch server.js",
     "start:prod": "cross-env NODE_ENV=production nodemon server.js"
   },
