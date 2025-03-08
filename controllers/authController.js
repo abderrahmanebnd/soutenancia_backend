@@ -13,7 +13,7 @@ const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const cookieOptions = {
     httpOnly: true,
-    secure: false,
+    secure: true,
     // secure: process.env.NODE_ENV === "production",
     // sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     sameSite: "Lax",
