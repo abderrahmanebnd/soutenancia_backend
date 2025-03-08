@@ -14,14 +14,14 @@ const createSendToken = (user, statusCode, res) => {
   const token = signToken(user.id);
   const cookieOptions = {
     httpOnly: true,
-    secure: false,
-    // secure: process.env.NODE_ENV === "production",
-    // sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    sameSite: "Lax",
+    // secure: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    // sameSite: "Lax",
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    // path: "/",
+    path: "/",
   };
 
   res.cookie("jwt", token, cookieOptions);
