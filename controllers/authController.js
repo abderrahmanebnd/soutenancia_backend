@@ -1,4 +1,3 @@
-const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
 const AppError = require("../utils/appError.js");
@@ -14,14 +13,14 @@ const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   const cookieOptions = {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === "production",
     secure: false,
+    // secure: process.env.NODE_ENV === "production",
     // sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    samesite: "Lax",
+    sameSite: "Lax",
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    path: "/",
+    // path: "/",
   };
 
   res.cookie("jwt", token, cookieOptions);
