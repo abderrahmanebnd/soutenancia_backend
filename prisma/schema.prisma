@@ -27,6 +27,7 @@ model Student {
   enrollmentNumber String?        @unique @db.VarChar(40)
   year             Int?
   speciality       String?        @db.VarChar(40)
+  customSkills     Json           @default("[]")
   skills           StudentSkill[]
 
   createdAt DateTime @default(now())
