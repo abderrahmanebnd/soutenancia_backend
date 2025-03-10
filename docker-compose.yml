@@ -12,6 +12,8 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
+      - PRISMA_MIGRATE_SKIP_GENERATE=true
+
     env_file:
       - .env
     command: sh -c "npx prisma generate && npx prisma migrate dev && nodemon --legacy-watch  --ext js,json,prisma server.js"

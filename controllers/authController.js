@@ -3,6 +3,9 @@ const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
 const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
+const bcrypt = require("bcrypt");
+const emailService = require("../services/emailService.js");
+const { validationResult } = require("express-validator");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -98,3 +101,131 @@ exports.login = catchAsync(async (req, res, next) => {
 
   createSendToken(user, 200, res);
 });
+
+const generateOtp = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "Email sent if user exists" });
+    }
+    const otp = generateOtp();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetOtpHash: otpHash, resetOtpExpiry: otpExpiry },
+    });
+
+    await emailService.sendOTP(email, otp);
+    res.status(200).json({ message: "otp has been sent to your email" });
+  } catch (error) {
+    console.error("Erreur lors de la demande de réinitialisation:", error);
+    res
+      .status(500)
+      .json({ message: "Une erreur est survenue, veuillez réessayer" });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.resetOtpHash) {
+      return res.status(404).json({ message: "code not valid or expired" });
+    }
+    const isValidOtp = await bcrypt.compare(otp, user.resetOtpHash);
+    if (!isValidOtp || user.resetOtpExpiry < new Date()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { resetOtpHash: null, resetOtpExpiry: null },
+      });
+      return res.status(400).json({ message: "code not valid or expired" });
+    }
+    const otpToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_RESET_EXPIRES_IN,
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetOtpHash: null, resetOtpExpiry: null },
+    });
+
+    res.status(200).json({
+      message: "Code validé",
+      otpToken,
+    });
+  } catch (error) {
+    console.log("error verifying the otp", error);
+    res.status(500).json({ message: "error server" });
+  }
+};
+
+// exports.resetPassword = async (req, res) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//       return res.status(401).json({ message: "token is required" });
+//     }
+//     const tokenOtp = authHeader.split(" ")[1];
+
+//     const decoded = jwt.verify(tokenOtp, process.env.JWT_SECRET);
+//     const userId = decoded.userId;
+
+//     const user = await prisma.user.findUnique({ where: { id: userId } });
+//     if (!user) {
+//       return res.status(404).json({ message: "user not found" });
+//     }
+//     const { password, confirmPassword } = req.body;
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({ errors: errors.array() });
+//     }
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     await prisma.user.update({
+//       where: { id: userId },
+//       data: { password: hashedPassword },
+//     });
+//     res.status(200).json({ message: "password changed" });
+//   } catch (error) {
+//     console.error("error in password changing ", error);
+//     res
+//       .status(500)
+//       .json({ message: "Une erreur est survenue veuillez réessayer" });
+//   }
+// };
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const userId = req.userId; // recupere l'id du user
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+    const { password, confirmPassword } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+    res.status(200).json({ message: "password changed" });
+  } catch (error) {
+    console.error("error in password changing ", error);
+    res.status(500).json({ message: "error try later" });
+  }
+};
