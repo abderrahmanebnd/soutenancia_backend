@@ -22,7 +22,25 @@ exports.getMe = catchAsync(async (req, res, next) => {
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
     include: {
-      Student: true,
+      Student: {
+        select: {
+          id: true,
+          speciality: true,
+          enrollmentNumber: true,
+          year: true,
+          customSkills: true,
+          isCompletedProfile: true,
+          skills: {
+            select: {
+              skill: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }, // Needed for computed property
     },
   });
 

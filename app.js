@@ -14,6 +14,7 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 app.use(
   cors({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+
     origin: "http://localhost:5173",
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
