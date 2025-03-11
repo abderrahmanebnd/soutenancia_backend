@@ -1,19 +1,18 @@
-const jwt = require("jsonwebtoken");
+// middleware/auth.js
+const jwt = require('jsonwebtoken');
 
-exports.verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+exports.verifyResetCookie = (req, res, next) => {
+  const token = req.cookies.resetToken;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Token requied in the header" });
+  if (!token) {
+    return res.status(401).json({ message: "Authorization cookie manquante" });
   }
 
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId; // id for the controllers
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Cookie invalide ou expiré" });
+    }
+    req.userId = decoded.userId;
     next();
-  } catch (error) {
-    return res.status(403).json({ message: "Token invalide ou expiré" });
-  }
+  });
 };

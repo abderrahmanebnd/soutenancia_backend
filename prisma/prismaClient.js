@@ -10,7 +10,11 @@ const userValidationSchema = z.object({
     .min(3, "Last name must be at least 3 characters")
     .optional(),
   email: z.string().email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Au moins une majuscule")
+    .regex(/[0-9]/, "Au moins un chiffre"),
   role: z.enum(["student", "teacher", "admin", "entreprise"]).optional(),
 });
 
@@ -21,7 +25,11 @@ const studentValidationSchema = z.object({
     .min(3, "Last name must be at least 3 characters")
     .optional(),
   email: z.string().email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Au moins une majuscule")
+    .regex(/[0-9]/, "Au moins un chiffre"),
   role: z.enum(["student", "teacher", "admin", "entreprise"]).optional(),
   enrollmentNumber: z
     .string()

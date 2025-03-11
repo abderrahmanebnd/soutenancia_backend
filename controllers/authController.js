@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
 const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const emailService = require("../services/emailService.js");
 const { validationResult } = require("express-validator");
 
@@ -108,6 +108,11 @@ const generateOtp = () => {
 
 exports.forgotPassword = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { email } = req.body;
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -161,49 +166,21 @@ exports.verifyOtp = async (req, res) => {
       data: { resetOtpHash: null, resetOtpExpiry: null },
     });
 
+    res.cookie("resetToken", otpToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "development",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    });
+
     res.status(200).json({
       message: "Code validé",
-      otpToken,
     });
   } catch (error) {
     console.log("error verifying the otp", error);
     res.status(500).json({ message: "error server" });
   }
 };
-
-// exports.resetPassword = async (req, res) => {
-//   try {
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//       return res.status(401).json({ message: "token is required" });
-//     }
-//     const tokenOtp = authHeader.split(" ")[1];
-
-//     const decoded = jwt.verify(tokenOtp, process.env.JWT_SECRET);
-//     const userId = decoded.userId;
-
-//     const user = await prisma.user.findUnique({ where: { id: userId } });
-//     if (!user) {
-//       return res.status(404).json({ message: "user not found" });
-//     }
-//     const { password, confirmPassword } = req.body;
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//       return res.status(400).json({ errors: errors.array() });
-//     }
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     await prisma.user.update({
-//       where: { id: userId },
-//       data: { password: hashedPassword },
-//     });
-//     res.status(200).json({ message: "password changed" });
-//   } catch (error) {
-//     console.error("error in password changing ", error);
-//     res
-//       .status(500)
-//       .json({ message: "Une erreur est survenue veuillez réessayer" });
-//   }
-// };
 
 exports.resetPassword = async (req, res) => {
   try {
@@ -222,6 +199,13 @@ exports.resetPassword = async (req, res) => {
     await prisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
+    });
+
+    //delete the cookie
+    res.clearCookie("resetToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "development",
+      sameSite: "strict",
     });
     res.status(200).json({ message: "password changed" });
   } catch (error) {

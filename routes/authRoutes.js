@@ -3,7 +3,7 @@ const authController = require("../controllers/authController.js");
 const e = require("express");
 const router = express.Router();
 const { body } = require("express-validator");
-const { verifyToken } = require("../middlewares/authMiddleware"); //midelware verification of token that we can use in other routes later
+const { verifyToken, verifyResetCookie } = require("../middlewares/authMiddleware"); //midelware verification of token that we can use in other routes later
 
 router.post(
   "/forgot-password",
@@ -24,7 +24,7 @@ router.post(
 
 router.post(
   "/reset-password",
-  verifyToken,
+  verifyResetCookie,
   body("password")
     .isLength({ min: 8 })
     .withMessage("8 caractères minimum")
