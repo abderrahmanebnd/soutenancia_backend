@@ -42,6 +42,7 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     for (const skillName of generalSkills) {
       let skill = await prisma.skill.findUnique({ where: { name: skillName } });
 
+      // TODO : remove this
       if (!skill) {
         skill = await prisma.skill.create({ data: { name: skillName } });
       }

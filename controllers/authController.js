@@ -6,6 +6,8 @@ const prisma = require("../prisma/prismaClient.js");
 const bcrypt = require("bcryptjs");
 const emailService = require("../services/emailService.js");
 const { validationResult } = require("express-validator");
+const { PrismaClient } = require("@prisma/client");
+const prismaRaw = new PrismaClient();
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -25,11 +27,9 @@ const createSendToken = (user, statusCode, res) => {
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
     path: "/",
-    domain: "localhost",
   };
 
   res.cookie("jwt", token, cookieOptions);
-  user.password = undefined;
   res.status(statusCode).json({
     status: "success",
     token,
@@ -88,9 +88,14 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   // Fetch user and include the Student model
-  const user = await prisma.user.findUnique({
+  const user = await prismaRaw.user.findUnique({
     where: { email },
-    include: {
+    select: {
+      password: true,
+      id: true,
+      email: true,
+      role: true,
+
       Student: { include: { skills: true } }, // Needed for computed property
     },
   });
@@ -99,6 +104,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Incorrect email or password", 401));
   }
 
+  user.password = undefined;
   createSendToken(user, 200, res);
 });
 
