@@ -94,6 +94,11 @@ const prisma = new PrismaClient().$extends({
         },
       },
     },
+    user: {
+      password: {
+        compute: () => undefined, // Always remove password from responses
+      },
+    },
   },
 });
 
