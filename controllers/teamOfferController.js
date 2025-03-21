@@ -184,6 +184,34 @@ exports.getTeamOffer = async (req, res) => {
   }
 };
 
+exports.deleteTeamOffer = async (req, res) => {
+  const { id } = req.params;
+  const leader_id = req.user.Student.id;
+  try {
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id },
+    });
+
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found" });
+    }
+
+    if (teamOffer.leader_id !== leader_id) {
+      return res
+        .status(403)
+        .json({ error: "You are not the leader of this team offer" });
+    }
+
+    await prisma.teamOffer.delete({
+      where: { id },
+    });
+
+    res.status(204).end();
+  } catch (error) {
+    console.error("Error deleting team offer:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 exports.getAllTeamOffers = async (req, res) => {
   try {
     const teamOffers = await prisma.teamOffer.findMany({
@@ -199,4 +227,3 @@ exports.getAllTeamOffers = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-// TODO: Add a route for the  getting all offers

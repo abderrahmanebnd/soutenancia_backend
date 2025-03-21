@@ -18,5 +18,6 @@ router
 router
   .route("/:id")
   .patch(validateUpdateTeamOffer, teamOfferController.updateTeamOffer)
-  .get(teamOfferController.getTeamOffer);
+  .get(teamOfferController.getTeamOffer)
+  .delete(teamOfferController.deleteTeamOffer);
 module.exports = router;
