@@ -11,6 +11,15 @@ exports.createTeamOffer = async (req, res) => {
   } = req.body;
 
   try {
+    const existingTeamOffer = await prisma.teamOffer.findUnique({
+      where: { leader_id },
+    });
+
+    if (existingTeamOffer) {
+      return res
+        .status(400)
+        .json({ error: "You already have a team offer created." });
+    }
     const leader = await prisma.student.findUnique({
       where: { id: leader_id },
     });

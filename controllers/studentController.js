@@ -1,5 +1,4 @@
 const catchAsync = require("../utils/catchAsync.js");
-const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
 
 exports.getAllSkills = catchAsync(async (req, res, next) => {
@@ -17,7 +16,10 @@ exports.addSkills = catchAsync(async (req, res, next) => {
   const { studentId, customSkill, generalSkills } = req.body;
 
   if (!studentId) {
-    return next(new AppError("Student ID is required.", 400));
+    return res.status(400).json({
+      status: "fail",
+      message: "Student ID is required",
+    });
   }
 
   const student = await prisma.student.findUnique({
@@ -26,7 +28,10 @@ exports.addSkills = catchAsync(async (req, res, next) => {
   });
 
   if (!student) {
-    return next(new AppError("Student not found", 404));
+    return res.status(404).json({
+      status: "fail",
+      message: "Student not found",
+    });
   }
 
   // Handle custom skills

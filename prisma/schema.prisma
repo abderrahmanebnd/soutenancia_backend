@@ -65,7 +65,7 @@ model TeamOffer {
   description              String?
   status                   TeamOfferStatus @default(open)
   max_members              Int?
-  leader_id                String
+  leader_id                String          @unique
   leader                   Student?        @relation(fields: [leader_id], references: [id], onDelete: Cascade)
   general_required_skills  Skill[]
   specific_required_skills Json[]          @default([])

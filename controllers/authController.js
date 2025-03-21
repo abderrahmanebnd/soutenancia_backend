@@ -1,7 +1,6 @@
 const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
-const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
 const bcrypt = require("bcryptjs");
 const emailService = require("../services/emailService.js");
@@ -52,9 +51,10 @@ exports.signup = catchAsync(async (req, res, next) => {
   } = req.body;
 
   if (role && !["student", "teacher", "entreprise"].includes(role)) {
-    return next(
-      new AppError("Role must be one of: student, teacher, or entreprise", 400)
-    );
+    return res.status(400).json({
+      status: "fail",
+      message: "Role must be either student, teacher or entreprise",
+    });
   }
 
   const newUser = await prisma.user.signup({
@@ -84,7 +84,10 @@ exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return next(new AppError("Please provide email and password", 400));
+    return res.status(400).json({
+      status: "fail",
+      message: "Please provide email and password",
+    });
   }
 
   // Fetch user and include the Student model
@@ -101,7 +104,10 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 
   if (!user || !(await prisma.user?.correctPassword(password, user.password))) {
-    return next(new AppError("Incorrect email or password", 401));
+    return res.status(401).json({
+      status: "fail",
+      message: "Incorrect email or password",
+    });
   }
 
   user.password = undefined;
