@@ -3,19 +3,19 @@ const prisma = require("../prisma/prismaClient");
 
 exports.createTeamOffer = async (req, res) => {
   const errors = validationResult(req);
-  console.log(errors);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
   const {
-    leader_id,
     title,
     max_members,
     description,
     general_required_skills,
     specific_required_skills,
   } = req.body;
+
+  const leader_id = req.user.Student.id;
 
   try {
     const existingTeamOffer = await prisma.teamOffer.findUnique({
@@ -27,9 +27,8 @@ exports.createTeamOffer = async (req, res) => {
         .status(400)
         .json({ error: "You already have a team offer created." });
     }
-    const leader = await prisma.student.findUnique({
-      where: { id: leader_id },
-    });
+
+    const leader = req.user.Student;
 
     if (!leader) {
       return res.status(404).json({ error: "Leader not found" });
@@ -73,12 +72,12 @@ exports.createTeamOffer = async (req, res) => {
 
     res.status(201).json(teamOffer);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-// TODO: Add validation for the request body
+exports.updateTeamOffer = async (req, res) => {};
+
 // TODO: Add a route for the  updating the offer
 // TODO: Add a route for the  getting the offer by id
 // TODO: Add a route for the  getting all offers

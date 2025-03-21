@@ -13,14 +13,9 @@ exports.getAllSkills = catchAsync(async (req, res, next) => {
 });
 
 exports.addSkills = catchAsync(async (req, res, next) => {
-  const { studentId, customSkill, generalSkills } = req.body;
+  const { customSkill, generalSkills } = req.body;
 
-  if (!studentId) {
-    return res.status(400).json({
-      status: "fail",
-      message: "Student ID is required",
-    });
-  }
+  const studentId = req.user.Student.id;
 
   const student = await prisma.student.findUnique({
     where: { id: studentId },

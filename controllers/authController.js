@@ -225,3 +225,48 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ message: "error try later" });
   }
 };
+
+exports.protect = catchAsync(async (req, res, next) => {
+  // 1) Getting token and check if it is exists
+
+  const token = req.cookies.jwt;
+  if (!token) {
+    return res.status(401).json({
+      status: "fail",
+      message: "You are not logged in! Please log in to get access.",
+    });
+  }
+  // 2) Verification token
+
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  // 3) Check if user still exists
+  const freshUser = await prisma.user.findUnique({
+    where: { id: decoded.id },
+    include: { Student: true },
+  });
+
+  if (!freshUser)
+    return res.status(401).json({
+      status: "fail",
+      message: "The user belonging to this token does no longer exist.",
+    });
+
+  // Grant access to protected route
+  req.user = freshUser;
+
+  console.log("current user", req.user);
+  next();
+});
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        status: "fail",
+        message: "You do not have permission to perform this action",
+      });
+    }
+    next();
+  };
+};
