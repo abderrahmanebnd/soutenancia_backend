@@ -83,6 +83,3 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     data: updatedStudent,
   });
 });
-
-// TODO - add protect middleware to restrict access to only authenticated users
-// TODO - add restrictTo middleware to restrict access to only students

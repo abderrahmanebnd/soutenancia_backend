@@ -21,3 +21,23 @@ exports.validateTeamOffer = [
     .isArray()
     .withMessage("Specific required skills must be an array"),
 ];
+
+exports.validateUpdateTeamOffer = [
+  body("title").optional().isString().withMessage("Title must be a string"),
+  body("max_members")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Max members must be a positive integer"),
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("Description must be a string"),
+  body("general_required_skills")
+    .optional()
+    .isArray()
+    .withMessage("General required skills must be an array"),
+  body("specific_required_skills")
+    .optional()
+    .isArray()
+    .withMessage("Specific required skills must be an array"),
+];
