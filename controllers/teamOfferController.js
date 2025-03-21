@@ -163,6 +163,40 @@ exports.updateTeamOffer = async (req, res) => {
   }
 };
 
-// TODO: Add a route for the  updating the offer
-// TODO: Add a route for the  getting the offer by id
+exports.getTeamOffer = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id },
+      include: {
+        general_required_skills: {
+          select: { name: true },
+        },
+      },
+    });
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found" });
+    }
+    res.status(200).json(teamOffer);
+  } catch (error) {
+    console.error("Error getting team offer:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.getAllTeamOffers = async (req, res) => {
+  try {
+    const teamOffers = await prisma.teamOffer.findMany({
+      include: {
+        general_required_skills: {
+          select: { name: true },
+        },
+      },
+    });
+    res.status(200).json(teamOffers);
+  } catch (error) {
+    console.error("Error getting team offers:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 // TODO: Add a route for the  getting all offers
