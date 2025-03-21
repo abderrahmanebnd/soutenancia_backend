@@ -28,6 +28,11 @@ exports.validateUpdateTeamOffer = [
     .optional()
     .isInt({ min: 1 })
     .withMessage("Max members must be a positive integer"),
+  body("status")
+    .optional()
+    .isString()
+    .isIn(["open", "closed", "completed"])
+    .withMessage("Status must be one of: open, closed, completed"),
   body("description")
     .optional()
     .isString()

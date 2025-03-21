@@ -91,6 +91,7 @@ exports.updateTeamOffer = async (req, res) => {
     title,
     max_members,
     description,
+    status,
     general_required_skills,
     specific_required_skills,
   } = req.body;
@@ -117,6 +118,7 @@ exports.updateTeamOffer = async (req, res) => {
     // Add fields if provided
     if (new_leader_id !== undefined) updateData.leader_id = new_leader_id;
     if (title !== undefined) updateData.title = title;
+    if (status !== undefined) updateData.status = status;
     if (max_members !== undefined) updateData.max_members = max_members;
     if (description !== undefined) updateData.description = description;
     if (specific_required_skills !== undefined)
