@@ -70,6 +70,11 @@ exports.createTeamOffer = async (req, res) => {
       },
     });
 
+    await prisma.student.update({
+      where: { id: leader_id },
+      data: { isLeader: true },
+    });
+
     res.status(201).json(teamOffer);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -156,6 +161,14 @@ exports.updateTeamOffer = async (req, res) => {
       },
     });
 
+    // Update leader status if needed
+    if (new_leader_id !== undefined && new_leader_id !== leader_id) {
+      await prisma.student.update({
+        where: { id: leader_id },
+        data: { isLeader: false },
+      });
+    }
+
     res.status(200).json(updatedTeamOffer);
   } catch (error) {
     console.error("Error updating team offer:", error);
@@ -204,6 +217,11 @@ exports.deleteTeamOffer = async (req, res) => {
 
     await prisma.teamOffer.delete({
       where: { id },
+    });
+
+    await prisma.student.update({
+      where: { id: leader_id },
+      data: { isLeader: false },
     });
 
     res.status(204).end();
