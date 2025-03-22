@@ -61,7 +61,18 @@ const prisma = new PrismaClient().$extends({
         data.password = await bcrypt.hash(data.password, 12);
         return await prisma.user.create({ data });
       },
-
+      async loginUser(email) {
+        return await prisma.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            role: true,
+            Student: { include: { skills: true } },
+          },
+        });
+      },
       async updateUser(args) {
         if (args.data) {
           const validation = userValidationSchema
@@ -92,6 +103,11 @@ const prisma = new PrismaClient().$extends({
         compute(student) {
           return student.skills.length > 0;
         },
+      },
+    },
+    user: {
+      password: {
+        compute: () => undefined, // Always remove password from responses
       },
     },
   },

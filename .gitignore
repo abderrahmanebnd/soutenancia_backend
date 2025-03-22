@@ -135,6 +135,5 @@ dist
 .yarn/install-state.gz
 .pnp.*
 # Prisma migration files
-prisma/migrations/
 
 *.env

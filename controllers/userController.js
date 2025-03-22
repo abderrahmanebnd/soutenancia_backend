@@ -1,7 +1,6 @@
 const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
-const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
 
 exports.getMe = catchAsync(async (req, res, next) => {
@@ -12,13 +11,15 @@ exports.getMe = catchAsync(async (req, res, next) => {
   }
 
   if (!token) {
-    return next(
-      new AppError("You are not logged in! Please log in to get access.", 401)
-    );
+    return res.status(401).json({
+      status: "fail",
+      message: "You are not logged in. Please log in to get access.",
+    });
   }
 
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
+  console.log("decoded", decoded);
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
     include: {
@@ -45,7 +46,10 @@ exports.getMe = catchAsync(async (req, res, next) => {
   });
 
   if (!user) {
-    return next(new AppError("User no longer exists.", 401));
+    return res.status(401).json({
+      status: "fail",
+      message: "The user belonging to this token does no longer exist.",
+    });
   }
 
   res.status(200).json({

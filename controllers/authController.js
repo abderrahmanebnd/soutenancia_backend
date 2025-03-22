@@ -1,11 +1,12 @@
 const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync.js");
-const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
 const bcrypt = require("bcryptjs");
 const emailService = require("../services/emailService.js");
 const { validationResult } = require("express-validator");
+const { PrismaClient } = require("@prisma/client");
+const prismaRaw = new PrismaClient();
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -25,11 +26,9 @@ const createSendToken = (user, statusCode, res) => {
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
     path: "/",
-    domain: "localhost",
   };
 
   res.cookie("jwt", token, cookieOptions);
-  user.password = undefined;
   res.status(statusCode).json({
     status: "success",
     token,
@@ -52,9 +51,10 @@ exports.signup = catchAsync(async (req, res, next) => {
   } = req.body;
 
   if (role && !["student", "teacher", "entreprise"].includes(role)) {
-    return next(
-      new AppError("Role must be one of: student, teacher, or entreprise", 400)
-    );
+    return res.status(400).json({
+      status: "fail",
+      message: "Role must be either student, teacher or entreprise",
+    });
   }
 
   const newUser = await prisma.user.signup({
@@ -84,21 +84,33 @@ exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return next(new AppError("Please provide email and password", 400));
+    return res.status(400).json({
+      status: "fail",
+      message: "Please provide email and password",
+    });
   }
 
   // Fetch user and include the Student model
-  const user = await prisma.user.findUnique({
+  const user = await prismaRaw.user.findUnique({
     where: { email },
-    include: {
+    select: {
+      password: true,
+      id: true,
+      email: true,
+      role: true,
+
       Student: { include: { skills: true } }, // Needed for computed property
     },
   });
 
   if (!user || !(await prisma.user?.correctPassword(password, user.password))) {
-    return next(new AppError("Incorrect email or password", 401));
+    return res.status(401).json({
+      status: "fail",
+      message: "Incorrect email or password",
+    });
   }
 
+  user.password = undefined;
   createSendToken(user, 200, res);
 });
 
@@ -212,4 +224,48 @@ exports.resetPassword = async (req, res) => {
     console.error("error in password changing ", error);
     res.status(500).json({ message: "error try later" });
   }
+};
+
+exports.protect = catchAsync(async (req, res, next) => {
+  // 1) Getting token and check if it is exists
+
+  const token = req.cookies.jwt;
+  if (!token) {
+    return res.status(401).json({
+      status: "fail",
+      message: "You are not logged in! Please log in to get access.",
+    });
+  }
+  // 2) Verification token
+
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  // 3) Check if user still exists
+  const freshUser = await prisma.user.findUnique({
+    where: { id: decoded.id },
+    include: { Student: true },
+  });
+
+  if (!freshUser)
+    return res.status(401).json({
+      status: "fail",
+      message: "The user belonging to this token does no longer exist.",
+    });
+
+  // Grant access to protected route
+  req.user = freshUser;
+
+  next();
+});
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        status: "fail",
+        message: "You do not have permission to perform this action",
+      });
+    }
+    next();
+  };
 };

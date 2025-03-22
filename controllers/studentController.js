@@ -1,5 +1,4 @@
 const catchAsync = require("../utils/catchAsync.js");
-const AppError = require("../utils/appError.js");
 const prisma = require("../prisma/prismaClient.js");
 
 exports.getAllSkills = catchAsync(async (req, res, next) => {
@@ -14,11 +13,9 @@ exports.getAllSkills = catchAsync(async (req, res, next) => {
 });
 
 exports.addSkills = catchAsync(async (req, res, next) => {
-  const { studentId, customSkill, generalSkills } = req.body;
+  const { customSkill, generalSkills } = req.body;
 
-  if (!studentId) {
-    return next(new AppError("Student ID is required.", 400));
-  }
+  const studentId = req.user.Student.id;
 
   const student = await prisma.student.findUnique({
     where: { id: studentId },
@@ -26,7 +23,10 @@ exports.addSkills = catchAsync(async (req, res, next) => {
   });
 
   if (!student) {
-    return next(new AppError("Student not found", 404));
+    return res.status(404).json({
+      status: "fail",
+      message: "Student not found",
+    });
   }
 
   // Handle custom skills
@@ -42,6 +42,7 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     for (const skillName of generalSkills) {
       let skill = await prisma.skill.findUnique({ where: { name: skillName } });
 
+      // TODO : remove this
       if (!skill) {
         skill = await prisma.skill.create({ data: { name: skillName } });
       }
@@ -82,6 +83,3 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     data: updatedStudent,
   });
 });
-
-// TODO - add protect middleware to restrict access to only authenticated users
-// TODO - add restrictTo middleware to restrict access to only students

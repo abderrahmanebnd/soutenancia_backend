@@ -19,6 +19,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-mongo-sanitize": "^2.2.0",
+    "xss-clean": "^0.1.4",
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
@@ -26,7 +27,6 @@
     "nodemailer": "^6.10.0",
     "pg": "^8.13.3",
     "prisma": "^6.4.1",
-    "xss-clean": "^0.1.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
