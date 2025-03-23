@@ -15,6 +15,8 @@ router
   .post(validateTeamOffer, teamOfferController.createTeamOffer)
   .get(teamOfferController.getAllTeamOffers);
 
+router.route("/myTeamOffer").get(teamOfferController.getMyTeamOffer);
+
 router
   .route("/:id")
   .patch(validateUpdateTeamOffer, teamOfferController.updateTeamOffer)

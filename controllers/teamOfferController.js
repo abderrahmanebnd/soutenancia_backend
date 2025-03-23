@@ -196,6 +196,26 @@ exports.getTeamOffer = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+exports.getMyTeamOffer = async (req, res) => {
+  const leader_id = req.user.Student.id;
+  try {
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { leader_id },
+      include: {
+        general_required_skills: {
+          select: { name: true },
+        },
+      },
+    });
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found" });
+    }
+    res.status(200).json(teamOffer);
+  } catch (error) {
+    console.error("Error getting team offer:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 exports.deleteTeamOffer = async (req, res) => {
   const { id } = req.params;
