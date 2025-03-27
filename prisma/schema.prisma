@@ -123,4 +123,5 @@ enum ApplicationStatus {
   pending
   accepted
   rejected
+  canceled
 }
