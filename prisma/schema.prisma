@@ -64,9 +64,9 @@ model StudentSkill {
 model TeamOffer {
   id                       String          @id @default(cuid())
   title                    String          @db.VarChar(100)
-  description              String?
+  description              String  @db.VarChar(1000)
   status                   TeamOfferStatus @default(open)
-  max_members              Int?
+  max_members              Int
   leader_id                String          @unique
   leader                   Student?        @relation(fields: [leader_id], references: [id], onDelete: Cascade)
   general_required_skills  Skill[]

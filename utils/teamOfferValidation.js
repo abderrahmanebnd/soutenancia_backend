@@ -6,13 +6,12 @@ exports.validateTeamOffer = [
     .isLength({ min: 3, max: 100 })
     .withMessage("Title must be between 3 and 100 characters"),
   body("max_members")
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage("Max members must be a positive integer"),
+    .isInt({ min: 1, max: 7 })
+    .withMessage("Max members must be between 1 and 7"),
   body("description")
-    .optional()
     .isString()
-    .withMessage("Description must be a string"),
+    .isLength({ min: 10, max: 1000 })
+    .withMessage("Description must be between 10 and 1000 characters"),
   body("general_required_skills")
     .isArray({ min: 1 })
     .withMessage("At least one general required skill is required"),
@@ -26,8 +25,8 @@ exports.validateUpdateTeamOffer = [
   body("title").optional().isString().withMessage("Title must be a string"),
   body("max_members")
     .optional()
-    .isInt({ min: 1 })
-    .withMessage("Max members must be a positive integer"),
+    .isInt({ min: 1, max: 7 })
+    .withMessage("Max members must be between 1 and 7"),
   body("status")
     .optional()
     .isString()
@@ -36,6 +35,7 @@ exports.validateUpdateTeamOffer = [
   body("description")
     .optional()
     .isString()
+    .isLength({ min: 10 })
     .withMessage("Description must be a string"),
   body("general_required_skills")
     .optional()
