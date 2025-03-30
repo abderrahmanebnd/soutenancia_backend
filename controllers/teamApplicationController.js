@@ -98,7 +98,7 @@ exports.updateApplicationStatus = async (req, res) => {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    // hadi dertha bach nverifiw kbel matwsl l db w n9edro negL3ouha ida front ygereha pcq , ledear mykdrch ydirha pending wela cancelled
+    // hadi dertha bach nverifiw kbel matwsl db w n9edro negL3ouha ida front ygereha pcq , leader mykdrch ydirha pending wela cancelled
 
     if (status !== "accepted" && status !== "rejected") {
       return res.status(400).json({ error: "Invalid status" });
@@ -117,7 +117,7 @@ exports.updateApplicationStatus = async (req, res) => {
 
     if (status === "accepted") {
       if (
-        application.teamOffer.max_members &&
+        typeof application.teamOffer.max_members === "number" &&
         application.teamOffer.TeamMember.length >=
           application.teamOffer.max_members
       ) {
@@ -128,34 +128,39 @@ exports.updateApplicationStatus = async (req, res) => {
       where: { id: applicationId },
       data: { status },
     });
-    if (status ==="accepted"){
-        await prisma.teamApplication.updateMany({
-            where :{
-                studentId: application.studentId,
-                status: "pending",
-                NOT :{id : applicationId},
-            },
-            data :{status: "canceled"},
+    if (status === "accepted") {
+      await prisma.teamApplication.updateMany({
+        where: {
+          studentId: application.studentId,
+          status: "pending",
+          NOT: { id: applicationId },
+        },
+        data: { status: "canceled" },
+      });
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+      if (!existingMember) {
+        await prisma.teamMember.create({
+          data: {
+            teamOfferId: application.teamOffer.id,
+            studentId: application.studentId,
+          },
         });
-        const existingMember = await prisma.teamMember.findFirst({
-            where : {teamOfferId: application.teamOffer.id,
-                studentId: application.studentId,
-              },
-      
-        })
-        if (!existingMember) {
-            await prisma.teamMember.create({
-              data: {
-                teamOfferId: application.teamOffer.id,
-                studentId: application.studentId,
-              },
-            });
-          }
-        }
-    
-        return res.status(200).json({ message: "Application updated successfully.", updatedApplication });
-      } catch (error) {
-        console.error("Error updating application:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
       }
-    };
+    }
+
+    return res
+      .status(200)
+      .json({
+        message: "Application updated successfully.",
+        updatedApplication,
+      });
+  } catch (error) {
+    console.error("Error updating application:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
