@@ -74,9 +74,14 @@ exports.createTeamOffer = async (req, res) => {
       },
       include: {
         general_required_skills: {
-          select: { name: true }, // Include general skills in the response
-        }, // Include general skills in the response
+          select: { name: true },
+        },
       },
+    });
+    // cancel the student's application when he want to create an offer and be the leader.
+    await prisma.teamApplication.updateMany({
+      where: { studentId: leader_id, status: "pending" },
+      data: { status: "canceled" },
     });
 
     await prisma.student.update({

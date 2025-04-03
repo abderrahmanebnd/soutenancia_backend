@@ -116,6 +116,17 @@ exports.updateApplicationStatus = async (req, res) => {
     }
 
     if (status === "accepted") {
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+
+      if (existingMember) {
+        return res.status(400).json({ error: "Already a team member" });
+      }
+
       if (
         typeof application.teamOffer.max_members === "number" &&
         application.teamOffer.teamMembers.length >=
@@ -137,20 +148,13 @@ exports.updateApplicationStatus = async (req, res) => {
         },
         data: { status: "canceled" },
       });
-      const existingMember = await prisma.teamMember.findFirst({
-        where: {
+
+      await prisma.teamMember.create({
+        data: {
           teamOfferId: application.teamOffer.id,
           studentId: application.studentId,
         },
       });
-      if (!existingMember) {
-        await prisma.teamMember.create({
-          data: {
-            teamOfferId: application.teamOffer.id,
-            studentId: application.studentId,
-          },
-        });
-      }
     }
 
     return res.status(200).json({
