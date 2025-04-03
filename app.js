@@ -8,6 +8,7 @@ const authRouter = require("./routes/authRoutes");
 const userRouter = require("./routes/userRoutes");
 const studentRouter = require("./routes/studentRoutes");
 const teamOfferRouter = require("./routes/teamOfferRoutes");
+const teamApplicationRouter = require("./routes/teamApplicationRoutes");
 const app = express();
 
 app.use("/public", express.static(path.join(__dirname, "public")));
@@ -32,6 +33,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/students", studentRouter);
 app.use("/api/v1/teamsOffers", teamOfferRouter);
+app.use("/api/v1/teamApplications", teamApplicationRouter);
 
 app.all("*", (req, res) => {
   return res.status(404).json({
