@@ -106,7 +106,7 @@ exports.updateApplicationStatus = async (req, res) => {
 
     const application = await prisma.teamApplication.findUnique({
       where: { id: applicationId },
-      include: { student: true, teamOffer: { include: { TeamMember: true } } },
+      include: { student: true, teamOffer: { include: { teamMembers: true } } },
     });
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
@@ -118,7 +118,7 @@ exports.updateApplicationStatus = async (req, res) => {
     if (status === "accepted") {
       if (
         typeof application.teamOffer.max_members === "number" &&
-        application.teamOffer.TeamMember.length >=
+        application.teamOffer.teamMembers.length >=
           application.teamOffer.max_members
       ) {
         return res.status(400).json({ error: "Team is full" });
@@ -153,12 +153,10 @@ exports.updateApplicationStatus = async (req, res) => {
       }
     }
 
-    return res
-      .status(200)
-      .json({
-        message: "Application updated successfully.",
-        updatedApplication,
-      });
+    return res.status(200).json({
+      message: "Application updated successfully.",
+      updatedApplication,
+    });
   } catch (error) {
     console.error("Error updating application:", error);
     return res.status(500).json({ error: "Internal Server Error" });
