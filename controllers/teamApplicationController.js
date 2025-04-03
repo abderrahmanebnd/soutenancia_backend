@@ -124,7 +124,7 @@ exports.updateApplicationStatus = async (req, res) => {
         return res.status(400).json({ error: "Team is full" });
       }
     }
-    const updateApplication = await prisma.teamApplication.update({
+    const updatedApplication = await prisma.teamApplication.update({
       where: { id: applicationId },
       data: { status },
     });

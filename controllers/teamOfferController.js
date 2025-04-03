@@ -34,6 +34,15 @@ exports.createTeamOffer = async (req, res) => {
       return res.status(404).json({ error: "Leader not found" });
     }
 
+    const existingMember = await prisma.teamMember.findFirst({
+      where: { studentId: leader_id },
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        error: "You are already a member of a team",
+      });
+    }
     const skills = await prisma.skill.findMany({
       where: { name: { in: general_required_skills } },
     });
