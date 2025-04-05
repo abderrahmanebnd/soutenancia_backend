@@ -1,7 +1,4 @@
-const { application } = require("express");
 const prisma = require("../prisma/prismaClient");
-const prsima = require("../prisma/prismaClient");
-const { validationResult } = require("express-validator");
 
 exports.applyToOffer = async (req, res) => {
   try {
@@ -84,6 +81,25 @@ exports.getTeamApplications = async (req, res) => {
       return res.status(404).json({ error: "Team offer not found." });
     }
     return res.status(200).json({ applications: teamOffer.TeamApplication });
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+
+exports.getMyApplications = async (req, res) => {
+  try {
+    const studentId = req.user.Student.id;
+    const applications = await prisma.teamApplication.findMany({
+      where: { studentId },
+      include: {
+        teamOffer: true,
+      },
+    });
+    if (!applications) {
+      return res.status(404).json({ error: "No applications found." });
+    }
+    return res.status(200).json({ applications });
   } catch (error) {
     console.error("Error fetching applications:", error);
     return res.status(500).json({ error: "server error" });
