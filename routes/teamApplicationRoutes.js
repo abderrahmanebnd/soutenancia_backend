@@ -15,10 +15,6 @@ router.post("/team-offers/:teamOfferId/applications", applyToOffer);
 
 router.get("/", getTeamApplications);
 
-router.patch(
-  "/team-offers/:teamOfferId/applications/:applicationId",
-  isTeamLeader,
-  updateApplicationStatus
-);
+router.patch("/:applicationId", updateApplicationStatus);
 
 module.exports = router;

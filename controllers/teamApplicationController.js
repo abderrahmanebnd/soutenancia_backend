@@ -95,23 +95,64 @@ exports.updateApplicationStatus = async (req, res) => {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    // hadi dertha bach nverifiw kbel matwsl db w n9edro negL3ouha ida front ygereha pcq , leader mykdrch ydirha pending wela cancelled
-
-    if (status !== "accepted" && status !== "rejected") {
-      return res.status(400).json({ error: "Invalid status" });
-    }
+    const studentId = req.user.Student.id;
 
     const application = await prisma.teamApplication.findUnique({
       where: { id: applicationId },
-      include: { student: true, teamOffer: { include: { teamMembers: true } } },
+      include: {
+        student: true,
+        teamOffer: { include: { teamMembers: true } },
+      },
     });
+
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
     }
-    if (application.teamOffer.leader_id !== req.user.Student.id) {
-      return res.status(403).json({ error: "You are not the leader" });
+
+    const isLeader = application.teamOffer.leader_id === studentId;
+    const isOwner = application.studentId === studentId;
+
+    // Leader's permissions
+    if (isLeader) {
+      if (status !== "accepted" && status !== "rejected") {
+        return res.status(400).json({
+          error:
+            "Leader can only accept or reject, status must be accepted or rejected.",
+        });
+      }
+
+      if (application.status !== "pending") {
+        return res.status(400).json({
+          error:
+            "Leader can only update applications that are currently pending.",
+        });
+      }
     }
 
+    // Student's permissions
+    else if (isOwner) {
+      if (status !== "canceled" && status !== "pending") {
+        return res.status(403).json({
+          error: "You can only change your application to canceled or pending.",
+        });
+      }
+
+      if (
+        application.status === "accepted" ||
+        application.status === "rejected"
+      ) {
+        return res.status(403).json({
+          error:
+            "You cannot update an application that has been accepted or rejected.",
+        });
+      }
+    } else {
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to update this application." });
+    }
+
+    // Leader: check if accepting
     if (status === "accepted") {
       const existingMember = await prisma.teamMember.findFirst({
         where: {
@@ -132,10 +173,12 @@ exports.updateApplicationStatus = async (req, res) => {
         return res.status(400).json({ error: "Team is full" });
       }
     }
+
     const updatedApplication = await prisma.teamApplication.update({
       where: { id: applicationId },
       data: { status },
     });
+
     if (status === "accepted") {
       await prisma.teamApplication.updateMany({
         where: {
@@ -152,6 +195,21 @@ exports.updateApplicationStatus = async (req, res) => {
           studentId: application.studentId,
         },
       });
+    }
+
+    if (status === "rejected" || status === "canceled") {
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+
+      if (existingMember) {
+        await prisma.teamMember.delete({
+          where: { id: existingMember.id },
+        });
+      }
     }
 
     return res.status(200).json({
