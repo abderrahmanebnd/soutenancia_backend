@@ -1,8 +1,7 @@
 const { application } = require("express");
 const prisma = require("../prisma/prismaClient");
-const prsima = require("../prisma/prismaClient");
 const { validationResult } = require("express-validator");
-
+const emailService = require("../services/emailService.js");
 exports.applyToOffer = async (req, res) => {
   try {
     const { teamOfferId } = req.params;
@@ -138,7 +137,20 @@ exports.updateApplicationStatus = async (req, res) => {
     const updatedApplication = await prisma.teamApplication.update({
       where: { id: applicationId },
       data: { status },
+      include: {
+        student: {
+          include: {
+            user: true
+          }
+        },
+        teamOffer: true
+      }
     });
+    if (status === "accepted " || status === "rejected") {
+      await emailService
+        .sendEmailApplication(status, updatedApplication)
+        .catch((error) => console.log("Email error", error));
+    }
     if (status === "accepted") {
       await prisma.teamApplication.updateMany({
         where: {
