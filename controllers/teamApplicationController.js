@@ -61,11 +61,18 @@ exports.applyToOffer = async (req, res) => {
 
 exports.getTeamApplications = async (req, res) => {
   try {
-    const { teamOfferId } = req.params;
     const userId = req.user.Student.id;
+    const isMember = await prisma.teamMember.findFirst({
+      where: { studentId: userId },
+    });
 
+    if (!isMember) {
+      return res
+        .status(403)
+        .json({ error: "You are not a member of any team." });
+    }
     const teamOffer = await prisma.teamOffer.findUnique({
-      where: { id: teamOfferId },
+      where: { id: isMember.teamOfferId },
       include: {
         TeamApplication: true,
       }, //include is like a join in sql
@@ -73,18 +80,8 @@ exports.getTeamApplications = async (req, res) => {
     if (!teamOffer) {
       return res.status(404).json({ error: "Team offer not found" });
     }
-
-    //verify if the user is the leader or a simple member
-
-    const isLeader = teamOffer.leader_id === userId;
-    const isMember = await prisma.teamMember.findFirst({
-      where: { teamOfferId: teamOffer.id, studentId: userId },
-    });
-
-    if (!isLeader && !isMember) {
-      return res
-        .status(403)
-        .json({ error: "You are not a member of this team." });
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found." });
     }
     return res.status(200).json({ applications: teamOffer.TeamApplication });
   } catch (error) {
