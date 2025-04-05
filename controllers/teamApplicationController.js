@@ -1,6 +1,5 @@
 const { application } = require("express");
 const prisma = require("../prisma/prismaClient");
-const prsima = require("../prisma/prismaClient");
 const { validationResult } = require("express-validator");
 
 exports.applyToOffer = async (req, res) => {
@@ -157,7 +156,7 @@ exports.updateApplicationStatus = async (req, res) => {
       .status(200)
       .json({
         message: "Application updated successfully.",
-        updatedApplication,
+        updateApplication,
       });
   } catch (error) {
     console.error("Error updating application:", error);
