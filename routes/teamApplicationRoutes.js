@@ -10,9 +10,7 @@ const {
 
 router.use(authController.protect, authController.restrictTo("student"));
 
-router.post("/team-offers/:teamOfferId/applications", applyToOffer);
-
-router.get("/", getTeamApplications);
+router.route("/").get(getTeamApplications).post(applyToOffer);
 router.get("/myApplications", getMyApplications);
 router.patch("/:applicationId", updateApplicationStatus);
 

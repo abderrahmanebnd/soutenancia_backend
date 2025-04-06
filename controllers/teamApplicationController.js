@@ -2,7 +2,7 @@ const prisma = require("../prisma/prismaClient");
 
 exports.applyToOffer = async (req, res) => {
   try {
-    const { teamOfferId } = req.params;
+    const { teamOfferId } = req.body;
 
     const student = req.user.Student;
 
@@ -71,7 +71,11 @@ exports.getTeamApplications = async (req, res) => {
     const teamOffer = await prisma.teamOffer.findUnique({
       where: { id: isMember.teamOfferId },
       include: {
-        TeamApplication: true,
+        TeamApplication: {
+          select: {
+            student: true,
+          },
+        },
       }, //include is like a join in sql
     });
     if (!teamOffer) {

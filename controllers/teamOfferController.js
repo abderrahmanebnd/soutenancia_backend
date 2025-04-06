@@ -78,6 +78,14 @@ exports.createTeamOffer = async (req, res) => {
         },
       },
     });
+    // Create a team member for the leader
+
+    const teamMember = await prisma.teamMember.create({
+      data: {
+        studentId: leader_id,
+        teamOfferId: teamOffer.id,
+      },
+    });
     // cancel the student's application when he want to create an offer and be the leader.
     await prisma.teamApplication.updateMany({
       where: { studentId: leader_id, status: "pending" },
@@ -198,6 +206,11 @@ exports.getTeamOffer = async (req, res) => {
       include: {
         general_required_skills: {
           select: { name: true },
+        },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
         },
       },
     });
