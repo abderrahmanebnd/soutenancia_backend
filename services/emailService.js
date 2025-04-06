@@ -38,65 +38,52 @@ exports.sendEmailApplication = async (status, application) => {
       teamOffer,
     } = application;
     const teamName = teamOffer.title;
-
     let subject, htmlContent;
-    const teamTitle = teamOffer.title;
     const fullName = `${user.firstName} ${user.lastName}`;
-    const baseStyle = `
-    <style>
-        .container { max-width: 600px; margin: 20px auto; padding: 30px; font-family: Arial, sans-serif; }
-        .header { color: ${
-          status === "accepted" ? "#2ecc71" : "#e74c3c"
-        }; text-align: center; }
-        .content { margin: 25px 0; line-height: 1.6; color: #333; }
-        .signature { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-      </style>
-    `;
+
+    const containerStyle =
+      "max-width: 600px; margin: 20px auto; padding: 30px; font-family: Arial, sans-serif;";
+    const headerStyle = `color: ${
+      status === "accepted" ? "#2ecc71" : "#e74c3c"
+    }; text-align: center; margin-bottom: 25px;`;
+    const contentStyle =
+      "margin: 25px 0; line-height: 1.6; color: #333; font-size: 16px;";
+    const signatureStyle =
+      "margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; color: #666;";
 
     if (status === "accepted") {
       subject = "🎉 Congratulations! Your Application Has Been Accepted";
-      htmlContent = `<!DOCTYPE html>
-    <html>
-    <head>${baseStyle}</head>
-    <body>
-      <div class="container">
-        <h1 class="header">Application Accepted</h1>
-        <div class="content">
+      htmlContent = `
+      <div style="${containerStyle}">
+        <h1 style="${headerStyle}">Application Accepted</h1>
+        <div style="${contentStyle}">
           <p>Dear ${fullName},</p>
-          <p>We are pleased to inform you that your application has been <span style="color: #2ecc71;">accepted</span>!</p>
-          <p>Welcome to the team!</p>
+          <p>We are pleased to inform you that your application for <strong>${teamName}</strong> has been <span style="color: #2ecc71;">accepted</span>!</p>
+          <p>Welcome to the team! You can now access the collaboration space through your dashboard.</p>
         </div>
-        <div class="signature">
+        <div style="${signatureStyle}">
           <p>Best regards,</p>
           <p>The Team Platform</p>
         </div>
       </div>
-    </body>
-    </html>
-  `;
+    `;
     } else {
-      subject = `Application Update: Your Application for "${teamTitle}"`;
+      subject = `Application Update: Your Application for "${teamName}"`;
       htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>${baseStyle}</head>
-      <body>
-        <div class="container">
-          <h1 class="header">Application Status</h1>
-          <div class="content">
+        <div style="${containerStyle}">
+          <h1 style="${headerStyle}">Application Status</h1>
+          <div style="${contentStyle}">
             <p>Dear ${fullName},</p>
-            <p>Thank you for your interest for our team.</p>
+            <p>Thank you for your interest in <strong>${teamName}</strong>.</p>
             <p>After careful consideration, we regret to inform you that we cannot proceed with your application at this time.</p>
             <p>We encourage you to explore other opportunities on our platform.</p>
           </div>
-          <div class="signature">
+          <div style="${signatureStyle}">
             <p>Best regards,</p>
             <p>The Team Platform</p>
           </div>
         </div>
-      </body>
-      </html>
-    `;
+      `;
     }
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
