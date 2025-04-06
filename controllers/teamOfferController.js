@@ -80,7 +80,7 @@ exports.createTeamOffer = async (req, res) => {
     });
     // Create a team member for the leader
 
-    const teamMember = await prisma.teamMember.create({
+    await prisma.teamMember.create({
       data: {
         studentId: leader_id,
         teamOfferId: teamOffer.id,

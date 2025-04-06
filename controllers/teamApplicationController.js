@@ -73,7 +73,31 @@ exports.getTeamApplications = async (req, res) => {
       include: {
         TeamApplication: {
           select: {
-            student: true,
+            id: true,
+            message: true,
+            status: true,
+            student: {
+              select: {
+                id: true,
+                customSkills: true,
+                skills: {
+                  select: {
+                    skill: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
           },
         },
       }, //include is like a join in sql
