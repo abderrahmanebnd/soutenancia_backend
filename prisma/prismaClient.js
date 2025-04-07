@@ -110,6 +110,14 @@ const prisma = new PrismaClient().$extends({
         compute: () => undefined, // Always remove password from responses
       },
     },
+    teamOffer: {
+      memberCount: {
+        needs: { TeamMember: true },
+        compute(teamOffer) {
+          return teamOffer.TeamMember ? teamOffer.TeamMember.length : 0; //return the number of members in the team offer
+        },
+      },
+    },
   },
 });
 
