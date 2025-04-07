@@ -145,7 +145,7 @@ exports.updateApplicationStatus = async (req, res) => {
       where: { id: applicationId },
       include: {
         student: true,
-        teamOffer: { include: { teamMembers: true } },
+        teamOffer: { include: { TeamMembers: true } },
       },
     });
 
@@ -211,7 +211,7 @@ exports.updateApplicationStatus = async (req, res) => {
 
       if (
         typeof application.teamOffer.max_members === "number" &&
-        application.teamOffer.teamMembers.length >=
+        application.teamOffer.TeamMembers.length >=
           application.teamOffer.max_members
       ) {
         return res.status(400).json({ error: "Team is full" });
