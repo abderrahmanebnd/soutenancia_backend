@@ -232,6 +232,11 @@ exports.getMyTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
+        },
       },
     });
     if (!teamOffer) {
