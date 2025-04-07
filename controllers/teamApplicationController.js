@@ -272,6 +272,22 @@ exports.updateApplicationStatus = async (req, res) => {
         await prisma.teamMember.delete({
           where: { id: existingMember.id },
         });
+
+        const otherTeamMemberships = await prisma.teamMember.findFirst({
+          where: {
+            studentId: application.studentId,
+            NOT: {
+              id: existingMember.id,
+            },
+          },
+        });
+
+        if (!otherTeamMemberships) {
+          await prisma.student.update({
+            where: { id: application.studentId },
+            data: { isInTeam: false },
+          });
+        }
       }
     }
 

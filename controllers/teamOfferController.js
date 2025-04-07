@@ -94,7 +94,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true , isInTeam: true},
+      data: { isLeader: true, isInTeam: true },
     });
 
     res.status(201).json(teamOffer);
@@ -207,7 +207,7 @@ exports.getTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
-        TeamMember: {
+        TeamMembers: {
           select: {
             student: true,
           },
@@ -217,7 +217,7 @@ exports.getTeamOffer = async (req, res) => {
     if (!teamOffer) {
       return res.status(404).json({ error: "Team offer not found" });
     }
-    // const currentMemberCount = teamOffer.TeamMember.length;
+
     res.status(200).json(teamOffer);
   } catch (error) {
     console.error("Error getting team offer:", error);
@@ -232,6 +232,11 @@ exports.getMyTeamOffer = async (req, res) => {
       include: {
         general_required_skills: {
           select: { name: true },
+        },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
         },
       },
     });
@@ -279,7 +284,7 @@ exports.deleteTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: false , isInTeam: false },
+      data: { isLeader: false, isInTeam: false },
     });
 
     res.status(204).end();
@@ -294,6 +299,11 @@ exports.getAllTeamOffers = async (req, res) => {
       include: {
         general_required_skills: {
           select: { name: true },
+        },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
         },
       },
     });

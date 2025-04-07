@@ -112,9 +112,9 @@ const prisma = new PrismaClient().$extends({
     },
     teamOffer: {
       memberCount: {
-        needs: { TeamMember: true },
+        needs: { TeamMembers: true },
         compute(teamOffer) {
-          return teamOffer.TeamMember ? teamOffer.TeamMember.length : 0; //return the number of members in the team offer
+          return teamOffer.TeamMembers ? teamOffer.TeamMembers.length : 0; //return the number of members in the team offer
         },
       },
     },
