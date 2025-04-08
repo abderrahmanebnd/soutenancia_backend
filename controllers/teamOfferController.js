@@ -34,6 +34,15 @@ exports.createTeamOffer = async (req, res) => {
       return res.status(404).json({ error: "Leader not found" });
     }
 
+    const existingMember = await prisma.teamMember.findFirst({
+      where: { studentId: leader_id },
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        error: "You are already a member of a team",
+      });
+    }
     const skills = await prisma.skill.findMany({
       where: { name: { in: general_required_skills } },
     });
@@ -65,9 +74,22 @@ exports.createTeamOffer = async (req, res) => {
       },
       include: {
         general_required_skills: {
-          select: { name: true }, // Include general skills in the response
-        }, // Include general skills in the response
+          select: { name: true },
+        },
       },
+    });
+    // Create a team member for the leader
+
+    await prisma.teamMember.create({
+      data: {
+        studentId: leader_id,
+        teamOfferId: teamOffer.id,
+      },
+    });
+    // cancel the student's application when he want to create an offer and be the leader.
+    await prisma.teamApplication.updateMany({
+      where: { studentId: leader_id, status: "pending" },
+      data: { status: "canceled" },
     });
 
     await prisma.student.update({
@@ -185,6 +207,11 @@ exports.getTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
+        },
       },
     });
     if (!teamOffer) {
@@ -205,6 +232,11 @@ exports.getMyTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
+        TeamMembers: {
+          select: {
+            student: true,
+          },
+        },
       },
     });
     if (!teamOffer) {
@@ -223,6 +255,9 @@ exports.deleteTeamOffer = async (req, res) => {
   try {
     const teamOffer = await prisma.teamOffer.findUnique({
       where: { id },
+      include: {
+        TeamMembers: true, // Include team members to check if there are any
+      },
     });
 
     if (!teamOffer) {
@@ -235,9 +270,16 @@ exports.deleteTeamOffer = async (req, res) => {
         .json({ error: "You are not the leader of this team offer" });
     }
 
-    await prisma.teamOffer.delete({
-      where: { id },
-    });
+    if (teamOffer.TeamMembers.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "You cannot delete a team offer with members" });
+    }
+
+    if (teamOffer)
+      await prisma.teamOffer.delete({
+        where: { id },
+      });
 
     await prisma.student.update({
       where: { id: leader_id },

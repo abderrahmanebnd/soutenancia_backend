@@ -64,7 +64,7 @@ model StudentSkill {
 model TeamOffer {
   id                       String          @id @default(cuid())
   title                    String          @db.VarChar(100)
-  description              String  @db.VarChar(1000)
+  description              String          @db.VarChar(1000)
   status                   TeamOfferStatus @default(open)
   max_members              Int
   leader_id                String          @unique
@@ -76,7 +76,7 @@ model TeamOffer {
   speciality String? @db.VarChar(40)
 
   TeamApplication TeamApplication[]
-  TeamMember      TeamMember[]
+  TeamMembers     TeamMember[]
 
   @@index([year, speciality]) // Optional: For faster querying
 }

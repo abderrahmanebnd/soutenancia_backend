@@ -1,11 +1,8 @@
-const { application } = require("express");
 const prisma = require("../prisma/prismaClient");
-const prsima = require("../prisma/prismaClient");
-const { validationResult } = require("express-validator");
 
 exports.applyToOffer = async (req, res) => {
   try {
-    const { teamOfferId } = req.params;
+    const { teamOfferId } = req.body;
 
     const student = req.user.Student;
 
@@ -61,32 +58,76 @@ exports.applyToOffer = async (req, res) => {
 
 exports.getTeamApplications = async (req, res) => {
   try {
-    const { teamOfferId } = req.params;
     const userId = req.user.Student.id;
+    const isMember = await prisma.teamMember.findFirst({
+      where: { studentId: userId },
+    });
 
+    if (!isMember) {
+      return res
+        .status(403)
+        .json({ error: "You are not a member of any team." });
+    }
     const teamOffer = await prisma.teamOffer.findUnique({
-      where: { id: teamOfferId },
+      where: { id: isMember.teamOfferId },
       include: {
-        TeamApplication: true,
+        TeamApplication: {
+          select: {
+            id: true,
+            message: true,
+            status: true,
+            student: {
+              select: {
+                id: true,
+                customSkills: true,
+                skills: {
+                  select: {
+                    skill: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       }, //include is like a join in sql
     });
     if (!teamOffer) {
       return res.status(404).json({ error: "Team offer not found" });
     }
-
-    //verify if the user is the leader or a simple member
-
-    const isLeader = teamOffer.leader_id === userId;
-    const isMember = await prisma.teamMember.findFirst({
-      where: { teamOfferId: teamOffer.id, studentId: userId },
-    });
-
-    if (!isLeader && !isMember) {
-      return res
-        .status(403)
-        .json({ error: "You are not a member of this team." });
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found." });
     }
     return res.status(200).json({ applications: teamOffer.TeamApplication });
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+
+exports.getMyApplications = async (req, res) => {
+  try {
+    const studentId = req.user.Student.id;
+    const applications = await prisma.teamApplication.findMany({
+      where: { studentId },
+      include: {
+        teamOffer: true,
+      },
+    });
+    if (!applications) {
+      return res.status(404).json({ error: "No applications found." });
+    }
+    return res.status(200).json({ applications });
   } catch (error) {
     console.error("Error fetching applications:", error);
     return res.status(500).json({ error: "server error" });
@@ -98,36 +139,90 @@ exports.updateApplicationStatus = async (req, res) => {
     const { applicationId } = req.params;
     const { status } = req.body;
 
-    // hadi dertha bach nverifiw kbel matwsl db w n9edro negL3ouha ida front ygereha pcq , leader mykdrch ydirha pending wela cancelled
-
-    if (status !== "accepted" && status !== "rejected") {
-      return res.status(400).json({ error: "Invalid status" });
-    }
+    const studentId = req.user.Student.id;
 
     const application = await prisma.teamApplication.findUnique({
       where: { id: applicationId },
-      include: { student: true, teamOffer: { include: { TeamMember: true } } },
+      include: {
+        student: true,
+        teamOffer: { include: { TeamMembers: true } },
+      },
     });
+
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
     }
-    if (application.teamOffer.leader_id !== req.user.Student.id) {
-      return res.status(403).json({ error: "You are not the leader" });
+
+    const isLeader = application.teamOffer.leader_id === studentId;
+    const isOwner = application.studentId === studentId;
+
+    // Leader's permissions
+    if (isLeader) {
+      if (status !== "accepted" && status !== "rejected") {
+        return res.status(400).json({
+          error:
+            "Leader can only accept or reject, status must be accepted or rejected.",
+        });
+      }
+
+      if (application.status !== "pending") {
+        return res.status(400).json({
+          error:
+            "Leader can only update applications that are currently pending.",
+        });
+      }
     }
 
+    // Student's permissions
+    else if (isOwner) {
+      if (status !== "canceled" && status !== "pending") {
+        return res.status(403).json({
+          error: "You can only change your application to canceled or pending.",
+        });
+      }
+
+      if (
+        application.status === "accepted" ||
+        application.status === "rejected"
+      ) {
+        return res.status(403).json({
+          error:
+            "You cannot update an application that has been accepted or rejected.",
+        });
+      }
+    } else {
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to update this application." });
+    }
+
+    // Leader: check if accepting
     if (status === "accepted") {
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+
+      if (existingMember) {
+        return res.status(400).json({ error: "Already a team member" });
+      }
+
       if (
         typeof application.teamOffer.max_members === "number" &&
-        application.teamOffer.TeamMember.length >=
+        application.teamOffer.TeamMembers.length >=
           application.teamOffer.max_members
       ) {
         return res.status(400).json({ error: "Team is full" });
       }
     }
-    const updateApplication = await prisma.teamApplication.update({
+
+    const updatedApplication = await prisma.teamApplication.update({
       where: { id: applicationId },
       data: { status },
     });
+
     if (status === "accepted") {
       await prisma.teamApplication.updateMany({
         where: {
@@ -137,28 +232,34 @@ exports.updateApplicationStatus = async (req, res) => {
         },
         data: { status: "canceled" },
       });
+
+      await prisma.teamMember.create({
+        data: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+    }
+
+    if (status === "rejected" || status === "canceled") {
       const existingMember = await prisma.teamMember.findFirst({
         where: {
           teamOfferId: application.teamOffer.id,
           studentId: application.studentId,
         },
       });
-      if (!existingMember) {
-        await prisma.teamMember.create({
-          data: {
-            teamOfferId: application.teamOffer.id,
-            studentId: application.studentId,
-          },
+
+      if (existingMember) {
+        await prisma.teamMember.delete({
+          where: { id: existingMember.id },
         });
       }
     }
 
-    return res
-      .status(200)
-      .json({
-        message: "Application updated successfully.",
-        updatedApplication,
-      });
+    return res.status(200).json({
+      message: "Application updated successfully.",
+      updatedApplication,
+    });
   } catch (error) {
     console.error("Error updating application:", error);
     return res.status(500).json({ error: "Internal Server Error" });
