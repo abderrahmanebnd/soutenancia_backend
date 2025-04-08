@@ -48,7 +48,35 @@ exports.applyToOffer = async (req, res) => {
         studentId: student.id,
         teamOfferId: teamOfferId,
       },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        teamOffer: true,
+      },
     });
+
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id: teamOfferId },
+      include: {
+        leader: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const leaderEmail = teamOffer.leader.user.email;
+    const leaderName = `${teamOffer.leader.user.firstName} ${
+      teamOffer.leader.user.lastName || ""
+    }`;
+    const studentName = `${req.user.firstName} ${req.user.lastName || ""}`;
+
+    await emailService
+      .sendEmailToLeader(application, leaderEmail, leaderName, studentName)
+      .catch((error) => console.log("Email error", error));
+
     return res
       .status(201)
       .json({ message: "Application submitted successfully.", application });
