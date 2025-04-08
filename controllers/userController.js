@@ -19,7 +19,6 @@ exports.getMe = catchAsync(async (req, res, next) => {
 
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  console.log("decoded", decoded);
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
     include: {
@@ -31,6 +30,7 @@ exports.getMe = catchAsync(async (req, res, next) => {
           year: true,
           isLeader: true,
           isInTeam: true,
+
           customSkills: true,
           isCompletedProfile: true,
           skills: {
