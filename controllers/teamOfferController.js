@@ -271,7 +271,7 @@ exports.deleteTeamOffer = async (req, res) => {
         .json({ error: "You are not the leader of this team offer" });
     }
 
-    if (teamOffer.TeamMembers.length > 0) {
+    if (teamOffer.TeamMembers.length > 1) {
       return res
         .status(400)
         .json({ error: "You cannot delete a team offer with members" });

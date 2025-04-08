@@ -9,7 +9,7 @@ exports.applyToOffer = async (req, res) => {
     const student = req.user.Student;
 
     const existingMember = await prisma.teamMember.findFirst({
-      where: { studentId: student.id },
+      where: { studentId: student.id ,  NOT: { teamOffer: { leader_id: student.id } }},
     });
     if (existingMember) {
       return res
@@ -41,7 +41,16 @@ exports.applyToOffer = async (req, res) => {
       await prisma.teamOffer.delete({
         where: { id: leaderTeamOffer.id },
       });
+
+      await prisma.student.update({
+        where: { id: student.id },
+        data: {
+          isLeader: false,
+          isInTeam: false,
+        },
+      });
     }
+    
     //no need to mention the status beacause rak dayer pending default
     const application = await prisma.teamApplication.create({
       data: {
