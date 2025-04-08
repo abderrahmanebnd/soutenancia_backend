@@ -4,7 +4,7 @@ const { application } = require("express");
 
 exports.applyToOffer = async (req, res) => {
   try {
-    const { teamOfferId } = req.body;
+    const { teamOfferId, message } = req.body;
 
     const student = req.user.Student;
 
@@ -20,6 +20,7 @@ exports.applyToOffer = async (req, res) => {
     const existingApplication = await prisma.teamApplication.findFirst({
       where: { studentId: student.id, teamOfferId: teamOfferId },
     });
+
     if (existingApplication) {
       return res
         .status(400)
@@ -46,6 +47,7 @@ exports.applyToOffer = async (req, res) => {
     const application = await prisma.teamApplication.create({
       data: {
         studentId: student.id,
+        message,
         teamOfferId: teamOfferId,
       },
     });

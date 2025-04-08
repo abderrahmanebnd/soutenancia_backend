@@ -241,7 +241,7 @@ exports.getMyTeamOffer = async (req, res) => {
       },
     });
     if (!teamOffer) {
-      return res.status(404).json({ error: "Team offer not found" });
+      return res.status(200).json({ error: "Team offer not found" });
     }
     res.status(200).json(teamOffer);
   } catch (error) {
