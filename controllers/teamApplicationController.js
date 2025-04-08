@@ -1,4 +1,6 @@
 const prisma = require("../prisma/prismaClient");
+const emailService = require("../services/emailService.js");
+const { application } = require("express");
 
 exports.applyToOffer = async (req, res) => {
   try {
@@ -146,6 +148,7 @@ exports.updateApplicationStatus = async (req, res) => {
       include: {
         student: true,
         teamOffer: { include: { TeamMembers: true } },
+
       },
     });
 
@@ -211,6 +214,7 @@ exports.updateApplicationStatus = async (req, res) => {
 
       if (
         typeof application.teamOffer.max_members === "number" &&
+
         application.teamOffer.TeamMembers.length >=
           application.teamOffer.max_members
       ) {
@@ -221,7 +225,21 @@ exports.updateApplicationStatus = async (req, res) => {
     const updatedApplication = await prisma.teamApplication.update({
       where: { id: applicationId },
       data: { status },
+      include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
+        teamOffer: true,
+      },
     });
+
+    if (status === "accepted" || status === "rejected") {
+      await emailService
+        .sendEmailApplication(status, updatedApplication)
+        .catch((error) => console.log("Email error", error));
+    }
 
     if (status === "accepted") {
       await prisma.teamApplication.updateMany({
@@ -239,6 +257,41 @@ exports.updateApplicationStatus = async (req, res) => {
           studentId: application.studentId,
         },
       });
+      await prisma.student.update({
+        where: { id: application.studentId },
+        data: { isInTeam: true },
+      });
+    }
+
+    if (status === "rejected" || status === "canceled") {
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+
+      if (existingMember) {
+        await prisma.teamMember.delete({
+          where: { id: existingMember.id },
+        });
+
+        const otherTeamMemberships = await prisma.teamMember.findFirst({
+          where: {
+            studentId: application.studentId,
+            NOT: {
+              id: existingMember.id,
+            },
+          },
+        });
+
+        if (!otherTeamMemberships) {
+          await prisma.student.update({
+            where: { id: application.studentId },
+            data: { isInTeam: false },
+          });
+        }
+      }
     }
 
     if (status === "rejected" || status === "canceled") {

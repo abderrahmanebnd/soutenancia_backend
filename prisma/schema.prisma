@@ -30,7 +30,7 @@ model Student {
   year             Int?
   speciality       String? @db.VarChar(40)
   isLeader         Boolean @default(false)
-
+  isInTeam   Boolean @default(false)
   customSkills Json           @default("[]")
   skills       StudentSkill[]
 
