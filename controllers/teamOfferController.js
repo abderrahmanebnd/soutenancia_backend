@@ -94,7 +94,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true, isInTeam: true },
+      data: { isLeader: true },
     });
 
     res.status(201).json(teamOffer);
@@ -183,7 +183,7 @@ exports.updateTeamOffer = async (req, res) => {
       },
     });
 
-    // Update leader status if needed
+    // New leader logic
     if (new_leader_id !== undefined && new_leader_id !== leader_id) {
       await prisma.student.update({
         where: { id: leader_id },
@@ -217,13 +217,13 @@ exports.getTeamOffer = async (req, res) => {
     if (!teamOffer) {
       return res.status(404).json({ error: "Team offer not found" });
     }
-
     res.status(200).json(teamOffer);
   } catch (error) {
     console.error("Error getting team offer:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.getMyTeamOffer = async (req, res) => {
   const leader_id = req.user.Student.id;
   try {
@@ -271,7 +271,7 @@ exports.deleteTeamOffer = async (req, res) => {
         .json({ error: "You are not the leader of this team offer" });
     }
 
-    if (teamOffer.TeamMembers.length > 0) {
+    if (teamOffer.TeamMembers.length > 1) {
       return res
         .status(400)
         .json({ error: "You cannot delete a team offer with members" });
@@ -286,24 +286,23 @@ exports.deleteTeamOffer = async (req, res) => {
       where: { id: leader_id },
       data: { isLeader: false, isInTeam: false },
     });
-
+    // Remove the leader from the team members table
+    await prisma.teamMember.delete({
+      where: { studentId: leader_id },
+    });
     res.status(204).end();
   } catch (error) {
     console.error("Error deleting team offer:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.getAllTeamOffers = async (req, res) => {
   try {
     const teamOffers = await prisma.teamOffer.findMany({
       include: {
         general_required_skills: {
           select: { name: true },
-        },
-        TeamMembers: {
-          select: {
-            student: true,
-          },
         },
       },
     });

@@ -1,6 +1,5 @@
 const prisma = require("../prisma/prismaClient");
 const emailService = require("../services/emailService.js");
-const { application } = require("express");
 
 exports.applyToOffer = async (req, res) => {
   try {
@@ -9,8 +8,16 @@ exports.applyToOffer = async (req, res) => {
     const student = req.user.Student;
 
     const existingMember = await prisma.teamMember.findFirst({
-      where: { studentId: student.id },
+      where: {
+        studentId: student.id,
+        NOT: {
+          teamOffer: {
+            leader_id: student.id, // allow the leader to apply to other teams
+          },
+        },
+      },
     });
+
     if (existingMember) {
       return res
         .status(400)
@@ -43,6 +50,11 @@ exports.applyToOffer = async (req, res) => {
         where: { id: leaderTeamOffer.id },
       });
     }
+
+    await prisma.student.update({
+      where: { id: student.id },
+      data: { isLeader: false, isInTeam: false }, //
+    });
     //no need to mention the status beacause rak dayer pending default
     const application = await prisma.teamApplication.create({
       data: {
@@ -150,7 +162,6 @@ exports.updateApplicationStatus = async (req, res) => {
       include: {
         student: true,
         teamOffer: { include: { TeamMembers: true } },
-
       },
     });
 
@@ -216,7 +227,6 @@ exports.updateApplicationStatus = async (req, res) => {
 
       if (
         typeof application.teamOffer.max_members === "number" &&
-
         application.teamOffer.TeamMembers.length >=
           application.teamOffer.max_members
       ) {
