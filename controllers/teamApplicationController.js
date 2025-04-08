@@ -147,7 +147,8 @@ exports.updateApplicationStatus = async (req, res) => {
       where: { id: applicationId },
       include: {
         student: true,
-        teamOffer: { include: { TeamMember: true } },
+        teamOffer: { include: { TeamMembers: true } },
+
       },
     });
 
@@ -213,7 +214,8 @@ exports.updateApplicationStatus = async (req, res) => {
 
       if (
         typeof application.teamOffer.max_members === "number" &&
-        application.teamOffer.TeamMember.length >=
+
+        application.teamOffer.TeamMembers.length >=
           application.teamOffer.max_members
       ) {
         return res.status(400).json({ error: "Team is full" });
@@ -238,6 +240,7 @@ exports.updateApplicationStatus = async (req, res) => {
         .sendEmailApplication(status, updatedApplication)
         .catch((error) => console.log("Email error", error));
     }
+
     if (status === "accepted") {
       await prisma.teamApplication.updateMany({
         where: {
@@ -288,6 +291,21 @@ exports.updateApplicationStatus = async (req, res) => {
             data: { isInTeam: false },
           });
         }
+      }
+    }
+
+    if (status === "rejected" || status === "canceled") {
+      const existingMember = await prisma.teamMember.findFirst({
+        where: {
+          teamOfferId: application.teamOffer.id,
+          studentId: application.studentId,
+        },
+      });
+
+      if (existingMember) {
+        await prisma.teamMember.delete({
+          where: { id: existingMember.id },
+        });
       }
     }
 
