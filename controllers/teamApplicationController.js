@@ -28,12 +28,24 @@ exports.applyToOffer = async (req, res) => {
       where: { studentId: student.id, teamOfferId: teamOfferId },
     });
 
-    if (existingApplication) {
+    if (existingApplication && existingApplication.status !== "canceled") {
+      // Check if the application is not canceled
       return res
         .status(400)
         .json({ error: "You have already applied to this offer" });
     }
-
+    if (existingApplication && existingApplication.status === "canceled") {
+      // If the application is canceled, update it to pending
+      // TODO: send email also to the leader
+      await prisma.teamApplication.update({
+        where: { id: existingApplication.id },
+        data: { status: "pending" },
+      });
+      return res.status(200).json({
+        message: "Application status updated to pending.",
+        application: existingApplication,
+      });
+    }
     const leaderTeamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id: student.id },
     });
@@ -55,7 +67,6 @@ exports.applyToOffer = async (req, res) => {
       where: { id: student.id },
       data: { isLeader: false, isInTeam: false }, //
     });
-    //no need to mention the status beacause rak dayer pending default
     const application = await prisma.teamApplication.create({
       data: {
         studentId: student.id,
@@ -134,22 +145,7 @@ exports.getTeamApplications = async (req, res) => {
 exports.getMyApplications = async (req, res) => {
   try {
     const studentId = req.user.Student.id;
-    // const applications = await prisma.teamApplication.findMany({
-    //   where: { studentId },
-    //   include: {
-    //     teamOffer: {
-    //       include: {
-    //         TeamMembers: true,
-    //         general_required_skills: {
-    //           select: { name: true },
-    //         },
-    //       },
-    //     },
-    //     select: {
-    //       TeamMembers: false,
-    //     },
-    //   },
-    // });
+
     const applications = await prisma.teamApplication.findMany({
       where: { studentId },
       include: {
