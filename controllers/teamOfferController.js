@@ -207,10 +207,30 @@ exports.getTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
+        leader: {
+          select: {
+            year: true,
+            speciality: true,
+            user: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        },
         TeamMembers: {
           select: {
-            student: true,
+            student: {
+              select: {
+                year: true,
+                speciality: true,
+                user: {
+                  select: { firstName: true, lastName: true, email: true },
+                },
+              },
+            },
           },
+        },
+        _count: {
+          select: { TeamMembers: true },
         },
       },
     });
@@ -301,6 +321,9 @@ exports.getAllTeamOffers = async (req, res) => {
   try {
     const teamOffers = await prisma.teamOffer.findMany({
       include: {
+        _count: {
+          select: { TeamMembers: true },
+        },
         general_required_skills: {
           select: { name: true },
         },

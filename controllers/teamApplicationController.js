@@ -134,12 +134,40 @@ exports.getTeamApplications = async (req, res) => {
 exports.getMyApplications = async (req, res) => {
   try {
     const studentId = req.user.Student.id;
+    // const applications = await prisma.teamApplication.findMany({
+    //   where: { studentId },
+    //   include: {
+    //     teamOffer: {
+    //       include: {
+    //         TeamMembers: true,
+    //         general_required_skills: {
+    //           select: { name: true },
+    //         },
+    //       },
+    //     },
+    //     select: {
+    //       TeamMembers: false,
+    //     },
+    //   },
+    // });
     const applications = await prisma.teamApplication.findMany({
       where: { studentId },
       include: {
-        teamOffer: true,
+        teamOffer: {
+          include: {
+            _count: {
+              select: { TeamMembers: true },
+            },
+            // You can include other fields here as needed
+            general_required_skills: {
+              select: { name: true },
+            },
+            // Note: if you don't include TeamMembers explicitly, it won't be returned.
+          },
+        },
       },
     });
+
     if (!applications) {
       return res.status(404).json({ error: "No applications found." });
     }
