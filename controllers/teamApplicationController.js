@@ -39,8 +39,6 @@ exports.applyToOffer = async (req, res) => {
       where: { studentId: student.id, teamOfferId: teamOfferId },
     });
     if (existingApplication && existingApplication.status !== "canceled") {
-
-    if (existingApplication && existingApplication.status !== "canceled") {
       // Check if the application is not canceled
       return res
         .status(400)
@@ -347,12 +345,12 @@ exports.updateApplicationStatus = async (req, res) => {
         data: { isInTeam: true },
       });
 
-      const teamOffer = await prisma.teamOffer.findUnique({
-        where: { id: application.teamOffer.id },
-        include: {
-          TeamMembers: true,
-        },
-      });
+      // const teamOffer = await prisma.teamOffer.findUnique({
+      //   where: { id: application.teamOffer.id },
+      //   include: {
+      //     TeamMembers: true,
+      //   },
+      // });
 
       const currentMemberCount = await prisma.teamMember.count({
         where: { teamOfferId: application.teamOffer.id },
@@ -394,22 +392,6 @@ exports.updateApplicationStatus = async (req, res) => {
         await prisma.teamMember.delete({
           where: { id: existingMember.id },
         });
-
-        const otherTeamMemberships = await prisma.teamMember.findFirst({
-          where: {
-            studentId: application.studentId,
-            NOT: {
-              id: existingMember.id,
-            },
-          },
-        });
-
-        if (!otherTeamMemberships) {
-          await prisma.student.update({
-            where: { id: application.studentId },
-            data: { isInTeam: false },
-          });
-        }
       }
     }
 

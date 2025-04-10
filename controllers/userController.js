@@ -43,7 +43,7 @@ exports.getMe = catchAsync(async (req, res, next) => {
             },
           },
         },
-      }, // Needed for computed property
+      },
     },
   });
 

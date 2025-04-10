@@ -25,5 +25,5 @@ router
 
 router
   .route("/:id/deleteTeamMember")
-  .patch(teamOfferController.deleteTeamMember);
+  .delete(teamOfferController.deleteTeamMember);
 module.exports = router;

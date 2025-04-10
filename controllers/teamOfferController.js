@@ -250,6 +250,10 @@ exports.getMyTeamOffer = async (req, res) => {
     const teamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id },
       include: {
+        _count: {
+          select: { TeamMembers: true },
+        },
+
         general_required_skills: {
           select: { name: true },
         },
@@ -336,7 +340,7 @@ exports.getAllTeamOffers = async (req, res) => {
   }
 };
 
-exports.deleteTeamMember = async () => {
+exports.deleteTeamMember = async (req, res) => {
   try {
     const { id } = req.params;
     const { memberId } = req.body;
@@ -361,8 +365,8 @@ exports.deleteTeamMember = async () => {
     if (teamOffer.leader_id !== leader_id) {
       return res.status(403).json({ error: "You are not the team leader" });
     }
-    const teamMember = await prisma.teamMember.findUnique({
-      where: { studentId: memberId, teamOfferId },
+    const teamMember = await prisma.teamMember.findFirst({
+      where: { studentId: memberId, teamOfferId: id },
     });
     if (!teamMember) {
       return res.status(404).json({ error: "Team member not found" });
@@ -370,8 +374,9 @@ exports.deleteTeamMember = async () => {
     await prisma.teamMember.delete({
       where: { id: teamMember.id },
     });
+    // TODO: send email to the student
     res.status(204).end();
-  } catch {
+  } catch (error) {
     console.error("Error deleting team Member:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
