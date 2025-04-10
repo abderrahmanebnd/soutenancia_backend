@@ -94,7 +94,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true, isInTeam: true },
+      data: { isLeader: true },
     });
 
     res.status(201).json(teamOffer);
@@ -183,7 +183,7 @@ exports.updateTeamOffer = async (req, res) => {
       },
     });
 
-    // Update leader status if needed
+    // New leader logic
     if (new_leader_id !== undefined && new_leader_id !== leader_id) {
       await prisma.student.update({
         where: { id: leader_id },
@@ -207,10 +207,30 @@ exports.getTeamOffer = async (req, res) => {
         general_required_skills: {
           select: { name: true },
         },
+        leader: {
+          select: {
+            year: true,
+            speciality: true,
+            user: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        },
         TeamMembers: {
           select: {
-            student: true,
+            student: {
+              select: {
+                year: true,
+                speciality: true,
+                user: {
+                  select: { firstName: true, lastName: true, email: true },
+                },
+              },
+            },
           },
+        },
+        _count: {
+          select: { TeamMembers: true },
         },
       },
     });
@@ -224,6 +244,7 @@ exports.getTeamOffer = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.getMyTeamOffer = async (req, res) => {
   const leader_id = req.user.Student.id;
   try {
@@ -287,6 +308,10 @@ exports.deleteTeamOffer = async (req, res) => {
       data: { isLeader: false, isInTeam: false },
     });
 
+    // Remove the leader from the team members table
+    await prisma.teamMember.delete({
+      where: { studentId: leader_id },
+    });
     res.status(204).end();
   } catch (error) {
     console.error("Error deleting team offer:", error);
@@ -297,13 +322,11 @@ exports.getAllTeamOffers = async (req, res) => {
   try {
     const teamOffers = await prisma.teamOffer.findMany({
       include: {
+        _count: {
+          select: { TeamMembers: true },
+        },
         general_required_skills: {
           select: { name: true },
-        },
-        TeamMembers: {
-          select: {
-            student: true,
-          },
         },
       },
     });
