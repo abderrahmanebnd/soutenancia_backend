@@ -7,9 +7,20 @@ exports.applyToOffer = async (req, res) => {
 
     const student = req.user.Student;
 
+    const closedOffer = await prisma.teamOffer.findUnique({
+      where: { id: teamOfferId },
+    });
+
+    if (closedOffer.status === "closed") {
+      return res.status(400).json({
+        error: "This team offer is closed ",
+      });
+    }
+
     const existingMember = await prisma.teamMember.findFirst({
       where: {
         studentId: student.id,
+
         NOT: {
           teamOffer: {
             leader_id: student.id, // allow the leader to apply to other teams
@@ -27,6 +38,7 @@ exports.applyToOffer = async (req, res) => {
     const existingApplication = await prisma.teamApplication.findFirst({
       where: { studentId: student.id, teamOfferId: teamOfferId },
     });
+    if (existingApplication && existingApplication.status !== "canceled") {
 
     if (existingApplication && existingApplication.status !== "canceled") {
       // Check if the application is not canceled
@@ -46,6 +58,7 @@ exports.applyToOffer = async (req, res) => {
         application: existingApplication,
       });
     }
+
     const leaderTeamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id: student.id },
     });
@@ -61,6 +74,14 @@ exports.applyToOffer = async (req, res) => {
       await prisma.teamOffer.delete({
         where: { id: leaderTeamOffer.id },
       });
+
+      await prisma.student.update({
+        where: { id: student.id },
+        data: {
+          isLeader: false,
+          isInTeam: false,
+        },
+      });
     }
 
     await prisma.student.update({
@@ -73,7 +94,35 @@ exports.applyToOffer = async (req, res) => {
         message,
         teamOfferId: teamOfferId,
       },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        teamOffer: true,
+      },
     });
+
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id: teamOfferId },
+      include: {
+        leader: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const leaderEmail = teamOffer.leader.user.email;
+    const leaderName = `${teamOffer.leader.user.firstName} ${
+      teamOffer.leader.user.lastName || ""
+    }`;
+    const studentName = `${req.user.firstName} ${req.user.lastName || ""}`;
+
+    await emailService
+      .sendEmailToLeader(application, leaderEmail, leaderName, studentName)
+      .catch((error) => console.log("Email error", error));
+
     return res
       .status(201)
       .json({ message: "Application submitted successfully.", application });
@@ -153,8 +202,8 @@ exports.getMyApplications = async (req, res) => {
           include: {
             _count: {
               select: { TeamMembers: true },
-            },
-            // You can include other fields here as needed
+            }, // You can include other fields here as needed
+
             general_required_skills: {
               select: { name: true },
             },
@@ -297,6 +346,40 @@ exports.updateApplicationStatus = async (req, res) => {
         where: { id: application.studentId },
         data: { isInTeam: true },
       });
+
+      const teamOffer = await prisma.teamOffer.findUnique({
+        where: { id: application.teamOffer.id },
+        include: {
+          TeamMembers: true,
+        },
+      });
+
+      const currentMemberCount = await prisma.teamMember.count({
+        where: { teamOfferId: application.teamOffer.id },
+      });
+
+      if (currentMemberCount === application.teamOffer.max_members) {
+        await prisma.teamOffer.update({
+          where: { id: application.teamOffer.id },
+          data: { status: "closed" },
+        });
+        console.log(
+          "the offer of the team has been closed because it has reach its maximum"
+        );
+
+        await prisma.teamApplication.updateMany({
+          where: {
+            teamOfferId: application.teamOffer.id,
+            status: "pending",
+            NOT: { id: applicationId },
+          },
+          data: { status: "canceled" },
+        });
+        console.log(
+          `the offer ${application.teamOffer.id}is closed beacause it has reachs its max (${currentMemberCount}/${application.teamOffer.max_members}).`
+        );
+        console.log("all the application for this offer were canceled.");
+      }
     }
 
     if (status === "rejected" || status === "canceled") {
