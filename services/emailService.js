@@ -98,3 +98,52 @@ exports.sendEmailApplication = async (status, application) => {
     throw new Error("Erreur lors de l'envoi de l'email");
   }
 };
+
+exports.sendEmailToLeader = async (
+  application,
+  leaderEmail,
+  leaderName,
+  studentName
+) => {
+  try {
+    const { teamOffer } = application;
+    const teamName = teamOffer.title;
+
+    const subject = `🔔 New Application For Your Offer "${teamName}"`;
+    const containerStyle =
+      "max-width: 600px; margin: 20px auto; padding: 30px; font-family: Arial, sans-serif;";
+    const headerStyle =
+      "color: #3498db; text-align: center; margin-bottom: 25px;";
+    const contentStyle =
+      "margin: 25px 0; line-height: 1.6; color: #333; font-size: 16px;";
+    const signatureStyle =
+      "margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; color: #666;";
+
+    const htmlContent = `
+      <div style="${containerStyle}">
+        <h1 style="${headerStyle}">New Application</h1>
+        <div style="${contentStyle}">
+          <p>Dear ${leaderName},</p>
+          <p>A new application has been submitted for your team offer <strong>${teamName}</strong>.</p>
+          <p>The student <strong>${studentName}</strong> would like to join your team.</p>
+          <p>You can review this application and make a decision through your dashboard.</p>
+        </div>
+        <div style="${signatureStyle}">
+          <p>Best regards,</p>
+          <p>The Soutenancia Platform</p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: leaderEmail,
+      subject,
+      html : htmlContent,
+    });
+    console.log(`email sent to ${leaderEmail}`);
+  } catch (error) {
+    console.error("❌ Erreur lors de l'envoi de l'email:", error);
+    throw new Error("Erreur lors de l'envoi de l'email");
+  }
+};

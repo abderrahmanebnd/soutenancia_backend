@@ -118,7 +118,6 @@ enum Role {
 enum TeamOfferStatus {
   open
   closed
-  completed
 }
 
 enum ApplicationStatus {
