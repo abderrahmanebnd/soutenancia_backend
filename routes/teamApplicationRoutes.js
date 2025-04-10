@@ -13,5 +13,4 @@ router.use(authController.protect, authController.restrictTo("student"));
 router.route("/").get(getTeamApplications).post(applyToOffer);
 router.get("/myApplications", getMyApplications);
 router.patch("/:applicationId", updateApplicationStatus);
-
 module.exports = router;

@@ -335,3 +335,44 @@ exports.getAllTeamOffers = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.deleteTeamMember = async () => {
+  try {
+    const { id } = req.params;
+    const { memberId } = req.body;
+    const leader_id = req.user.Student.id;
+
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id },
+      include: {
+        TeamMembers: true,
+      },
+    });
+    const student = await prisma.student.findFirst({
+      where: { id: memberId },
+    });
+
+    if (!student) {
+      return res.status(404).json({ error: "Student offer not found" });
+    }
+    if (!teamOffer) {
+      return res.status(404).json({ error: "Team offer not found" });
+    }
+    if (teamOffer.leader_id !== leader_id) {
+      return res.status(403).json({ error: "You are not the team leader" });
+    }
+    const teamMember = await prisma.teamMember.findUnique({
+      where: { studentId: memberId, teamOfferId },
+    });
+    if (!teamMember) {
+      return res.status(404).json({ error: "Team member not found" });
+    }
+    await prisma.teamMember.delete({
+      where: { id: teamMember.id },
+    });
+    res.status(204).end();
+  } catch {
+    console.error("Error deleting team Member:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

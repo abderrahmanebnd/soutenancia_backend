@@ -22,4 +22,8 @@ router
   .patch(validateUpdateTeamOffer, teamOfferController.updateTeamOffer)
   .get(teamOfferController.getTeamOffer)
   .delete(teamOfferController.deleteTeamOffer);
+
+router
+  .route("/:id/deleteTeamMember")
+  .patch(teamOfferController.deleteTeamMember);
 module.exports = router;
