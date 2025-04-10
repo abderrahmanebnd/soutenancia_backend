@@ -1,6 +1,5 @@
 const prisma = require("../prisma/prismaClient");
 const emailService = require("../services/emailService.js");
-const { application } = require("express");
 
 exports.applyToOffer = async (req, res) => {
   try {
@@ -21,9 +20,15 @@ exports.applyToOffer = async (req, res) => {
     const existingMember = await prisma.teamMember.findFirst({
       where: {
         studentId: student.id,
-        NOT: { teamOffer: { leader_id: student.id } },
+
+        NOT: {
+          teamOffer: {
+            leader_id: student.id, // allow the leader to apply to other teams
+          },
+        },
       },
     });
+
     if (existingMember) {
       return res
         .status(400)
@@ -34,11 +39,13 @@ exports.applyToOffer = async (req, res) => {
       where: { studentId: student.id, teamOfferId: teamOfferId },
     });
     if (existingApplication && existingApplication.status !== "canceled") {
+
+    if (existingApplication && existingApplication.status !== "canceled") {
+      // Check if the application is not canceled
       return res
         .status(400)
         .json({ error: "You have already applied to this offer" });
     }
-
     if (existingApplication && existingApplication.status === "canceled") {
       // If the application is canceled, update it to pending
       // TODO: send email also to the leader
@@ -77,7 +84,10 @@ exports.applyToOffer = async (req, res) => {
       });
     }
 
-    //no need to mention the status beacause rak dayer pending default
+    await prisma.student.update({
+      where: { id: student.id },
+      data: { isLeader: false, isInTeam: false }, //
+    });
     const application = await prisma.teamApplication.create({
       data: {
         studentId: student.id,
@@ -193,6 +203,7 @@ exports.getMyApplications = async (req, res) => {
             _count: {
               select: { TeamMembers: true },
             }, // You can include other fields here as needed
+
             general_required_skills: {
               select: { name: true },
             },
@@ -201,6 +212,7 @@ exports.getMyApplications = async (req, res) => {
         },
       },
     });
+
     if (!applications) {
       return res.status(404).json({ error: "No applications found." });
     }

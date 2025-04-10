@@ -237,7 +237,6 @@ exports.getTeamOffer = async (req, res) => {
     if (!teamOffer) {
       return res.status(404).json({ error: "Team offer not found" });
     }
-
     res.status(200).json(teamOffer);
   } catch (error) {
     console.error("Error getting team offer:", error);
@@ -262,7 +261,7 @@ exports.getMyTeamOffer = async (req, res) => {
       },
     });
     if (!teamOffer) {
-      return res.status(404).json({ error: "Team offer not found" });
+      return res.status(200).json({ error: "Team offer not found" });
     }
     res.status(200).json(teamOffer);
   } catch (error) {
@@ -307,7 +306,6 @@ exports.deleteTeamOffer = async (req, res) => {
       where: { id: leader_id },
       data: { isLeader: false, isInTeam: false },
     });
-
     // Remove the leader from the team members table
     await prisma.teamMember.delete({
       where: { studentId: leader_id },
@@ -318,6 +316,7 @@ exports.deleteTeamOffer = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.getAllTeamOffers = async (req, res) => {
   try {
     const teamOffers = await prisma.teamOffer.findMany({
