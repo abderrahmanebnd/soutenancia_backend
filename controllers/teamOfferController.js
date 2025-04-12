@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const prisma = require("../prisma/prismaClient");
+const emailService = require("../services/emailService.js");
 
 exports.createTeamOffer = async (req, res) => {
   const errors = validationResult(req);
@@ -94,7 +95,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true },
+      data: { isLeader: true, isInTeam: true },
     });
 
     res.status(201).json(teamOffer);
@@ -346,35 +347,119 @@ exports.deleteTeamMember = async (req, res) => {
     const { memberId } = req.body;
     const leader_id = req.user.Student.id;
 
-    const teamOffer = await prisma.teamOffer.findUnique({
-      where: { id },
-      include: {
-        TeamMembers: true,
-      },
-    });
-    const student = await prisma.student.findFirst({
-      where: { id: memberId },
+    const result = await prisma.$transaction(async (tx) => {
+      const teamOffer = await tx.teamOffer.findUnique({
+        where: { id },
+        include: {
+          TeamMembers: true,
+          leader: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+      const student = await tx.student.findFirst({
+        where: { id: memberId },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!student) {
+        return res.status(404).json({ error: "Student offer not found" });
+      }
+      if (!teamOffer) {
+        return res.status(404).json({ error: "Team offer not found" });
+      }
+      if (teamOffer.leader_id !== leader_id) {
+        return res.status(403).json({ error: "You are not the team leader" });
+      }
+      const teamMember = await prisma.teamMember.findFirst({
+        where: { studentId: memberId, teamOfferId: id },
+      });
+      if (!teamMember) {
+        return res.status(404).json({ error: "Team member not found" });
+      }
+      await tx.teamMember.delete({
+        where: { id: teamMember.id },
+      });
+      //updating the flag isInTeam
+      await tx.student.update({
+        where: { id: memberId },
+        data: { isInTeam: false },
+      });
+
+      // changing the status of the offer if closed
+      if (teamOffer.status === "closed") {
+        await tx.teamOffer.update({
+          where: { id },
+          data: {
+            status: "open",
+          },
+        });
+      }
+
+      // rejecting the application of the deleted member in this offer
+      await tx.teamApplication.updateMany({
+        where: {
+          teamOfferId: id,
+          studentId: memberId,
+        },
+        data: { status: "rejected" },
+      });
+
+      // updating the status of the canceled applications of the deleted member
+      const canceledApplications = await tr.teamApplication.findMany({
+        where: {
+          studentId: memberId,
+          status: "canceled",
+          NOT: { teamOfferId: id },
+        },
+        include: {
+          teamOffer: {
+            include: {
+              TeamMembers: true,
+            },
+          },
+        },
+      });
+      // filter the applications that are not full and have an open status
+      // keep this solution its better than just verfying the status
+      const applicationToUpdate = canceledApplications.filter((app) => {
+        return (
+          app.teamOffer.TeamMembers.length < app.teamOffer.max_members &&
+          app.teamOffer.status === "open"
+        );
+      });
+
+      for (const app of applicationToUpdate) {
+        await tx.teamApplication.update({
+          where: { id: app.id },
+          data: { status: "pending" },
+        });
+      }
+      return {
+        teamOffer,
+        student,
+        reactivatedCount: applicationToUpdate.length,
+      };
     });
 
-    if (!student) {
-      return res.status(404).json({ error: "Student offer not found" });
-    }
-    if (!teamOffer) {
-      return res.status(404).json({ error: "Team offer not found" });
-    }
-    if (teamOffer.leader_id !== leader_id) {
-      return res.status(403).json({ error: "You are not the team leader" });
-    }
-    const teamMember = await prisma.teamMember.findFirst({
-      where: { studentId: memberId, teamOfferId: id },
-    });
-    if (!teamMember) {
-      return res.status(404).json({ error: "Team member not found" });
-    }
-    await prisma.teamMember.delete({
-      where: { id: teamMember.id },
-    });
-    // TODO: send email to the student
+    //sending the email to the deleted student
+    const { teamOffer, student } = result;
+    const studentName = `${student.user.firstName} ${student.user.lastName}`;
+    const leaderName = `${teamOffer.leader.user.firstName} ${teamOffer.leader.user.lastName}`;
+
+    await emailService
+      .EmailToDeletedStudent(
+        student.user.email,
+        studentName,
+        teamOffer.title,
+        leaderName
+      )
+      .catch((error) => console.log("Email error", error));
+
     res.status(204).end();
   } catch (error) {
     console.error("Error deleting team Member:", error);

@@ -139,11 +139,59 @@ exports.sendEmailToLeader = async (
       from: process.env.EMAIL_USER,
       to: leaderEmail,
       subject,
-      html : htmlContent,
+      html: htmlContent,
     });
     console.log(`email sent to ${leaderEmail}`);
   } catch (error) {
     console.error("❌ Erreur lors de l'envoi de l'email:", error);
     throw new Error("Erreur lors de l'envoi de l'email");
+  }
+};
+
+exports.EmailToDeletedStudent = async (
+  studentEmail,
+  studentName,
+  teamOfferName,
+  leaderName
+) => {
+  try {
+    const subject = `Information regarding the team "${teamOfferName}"`;
+
+    const containerStyle =
+      "max-width: 600px; margin: 20px auto; padding: 30px; font-family: Arial, sans-serif;";
+    const headerStyle =
+      "color: #e67e22; text-align: center; margin-bottom: 25px;";
+    const contentStyle =
+      "margin: 25px 0; line-height: 1.6; color: #333; font-size: 16px;";
+    const signatureStyle =
+      "margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; color: #666;";
+
+    const htmlContent = `
+      <div style="${containerStyle}">
+        <h1 style="${headerStyle}">Change in your team</h1>
+        <div style="${contentStyle}">
+          <p>Dear ${studentName},</p>
+          <p>We inform you that you are no longer a member of the team <strong>"${teamOfferName}"</strong>.</p>
+          <p>This decision was made by the team leader, ${leaderName}.</p>
+          <p>You can now apply to other team offers on the platform. Your previous applications that had been automatically canceled have been reactivated if the concerned teams still have available spots.</p>
+        </div>
+        <div style="${signatureStyle}">
+          <p>Best regards,</p>
+          <p>The Soutenancia platform</p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: studentEmail,
+      subject,
+      html: htmlContent,
+    });
+
+    console.log(`Removal notification email sent to ${studentEmail}`);
+  } catch (error) {
+    console.error("❌ Error while sending removal email:", error);
+    throw new Error("Error while sending removal email");
   }
 };

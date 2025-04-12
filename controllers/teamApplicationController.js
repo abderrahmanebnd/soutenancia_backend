@@ -16,11 +16,9 @@ exports.applyToOffer = async (req, res) => {
         error: "This team offer is closed ",
       });
     }
-
     const existingMember = await prisma.teamMember.findFirst({
       where: {
         studentId: student.id,
-
         NOT: {
           teamOffer: {
             leader_id: student.id, // allow the leader to apply to other teams
