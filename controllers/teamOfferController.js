@@ -94,7 +94,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true },
+      data: { isLeader: true , isInTeam: true },
     });
 
     res.status(201).json(teamOffer);
