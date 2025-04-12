@@ -33,6 +33,11 @@ exports.getMe = catchAsync(async (req, res, next) => {
 
           customSkills: true,
           isCompletedProfile: true,
+          TeamMember: {
+            select: {
+              teamOfferId: true,
+            },
+          },
           skills: {
             select: {
               skill: {
