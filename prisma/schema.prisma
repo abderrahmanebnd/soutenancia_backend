@@ -23,16 +23,16 @@ model User {
 }
 
 model Student {
-  id               String  @id @default(cuid())
-  userId           String  @unique
-  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enrollmentNumber String? @unique @db.VarChar(40)
+  id               String         @id @default(cuid())
+  userId           String         @unique
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollmentNumber String?        @unique @db.VarChar(40)
   year             Int?
-  speciality       String? @db.VarChar(40)
-  isLeader         Boolean @default(false)
-  isInTeam   Boolean @default(false)
-  customSkills Json           @default("[]")
-  skills       StudentSkill[]
+  speciality       String?        @db.VarChar(40)
+  isLeader         Boolean        @default(false)
+  isInTeam         Boolean        @default(false)
+  customSkills     Json           @default("[]")
+  skills           StudentSkill[]
 
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -106,6 +106,16 @@ model TeamMember {
   student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([teamOfferId, studentId]) // a student can join only once per team offer
+}
+
+model TeamCompositionWindow {
+  id         String   @id @default(cuid())
+  speciality String?  @db.VarChar(40)
+  year       Int?
+  startDate  DateTime
+  endDate    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 enum Role {

@@ -1,6 +1,5 @@
 const express = require("express");
 const authController = require("../controllers/authController.js");
-const e = require("express");
 const router = express.Router();
 const { body } = require("express-validator");
 const { verifyResetCookie } = require("../middlewares/authMiddleware"); //midelware verification of token that we can use in other routes later

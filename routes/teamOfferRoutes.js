@@ -5,10 +5,17 @@ const {
   validateTeamOffer,
   validateUpdateTeamOffer,
 } = require("../utils/teamOfferValidation");
+const {
+  isTeamCompositionActive,
+} = require("../controllers/teamCompositionSettingsController");
 
 const router = express.Router();
-// Protect all routes after this middleware
-router.use(authController.protect, authController.restrictTo("student"));
+
+router.use(
+  authController.protect,
+  authController.restrictTo("student"),
+  isTeamCompositionActive
+);
 
 router
   .route("/")

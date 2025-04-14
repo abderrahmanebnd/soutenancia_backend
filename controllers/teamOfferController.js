@@ -210,6 +210,7 @@ exports.getTeamOffer = async (req, res) => {
         },
         leader: {
           select: {
+            id: true,
             year: true,
             speciality: true,
             user: {
@@ -221,6 +222,7 @@ exports.getTeamOffer = async (req, res) => {
           select: {
             student: {
               select: {
+                id: true,
                 year: true,
                 speciality: true,
                 user: {

@@ -5,6 +5,7 @@ const xss = require("xss-clean");
 const cors = require("cors");
 const path = require("path");
 const authRouter = require("./routes/authRoutes");
+const teamCompositionSettingsRouter = require("./routes/teamCompositionSettingsRoutes");
 const userRouter = require("./routes/userRoutes");
 const studentRouter = require("./routes/studentRoutes");
 const teamOfferRouter = require("./routes/teamOfferRoutes");
@@ -30,6 +31,7 @@ app.use(mongoSanitize());
 app.use(xss());
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/settings/teamComposition", teamCompositionSettingsRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/students", studentRouter);
 app.use("/api/v1/teamsOffers", teamOfferRouter);

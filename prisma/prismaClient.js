@@ -54,7 +54,7 @@ const prisma = new PrismaClient().$extends({
         } else {
           const validatedUser = userValidationSchema.safeParse(data);
           if (!validatedUser.success) {
-            throw new Error(validatedStudent?.error?.errors[0]?.message);
+            throw new Error(validatedUser?.error?.errors[0]?.message);
           }
         }
 

@@ -7,8 +7,15 @@ const {
   updateApplicationStatus,
   getMyApplications,
 } = require("../controllers/teamApplicationController");
+const {
+  isTeamCompositionActive,
+} = require("../controllers/teamCompositionSettingsController");
 
-router.use(authController.protect, authController.restrictTo("student"));
+router.use(
+  authController.protect,
+  authController.restrictTo("student"),
+  isTeamCompositionActive
+);
 
 router.route("/").get(getTeamApplications).post(applyToOffer);
 router.get("/myApplications", getMyApplications);
