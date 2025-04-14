@@ -1,4 +1,3 @@
-const { validationResult } = require("express-validator");
 const prisma = require("../prisma/prismaClient");
 
 async function isTeamCompositionActiveForStudent(speciality, year) {
@@ -82,12 +81,11 @@ exports.getTeamCompositionSettingsById = async (req, res) => {
 
 // CREATE new setting
 exports.createTeamCompositionSettings = async (req, res) => {
-  //   const errors = validationResult(req);
-  //   if (!errors.isEmpty()) {
-  //     return res.status(400).json({ errors: errors.array() });
-  //   }
-
   const { startDate, endDate, speciality, year } = req.body;
+
+  if (new Date(endDate) <= new Date(startDate)) {
+    return res.status(400).json({ error: "endDate must be after startDate" });
+  }
 
   try {
     const created = await prisma.teamCompositionWindow.create({
@@ -108,11 +106,6 @@ exports.createTeamCompositionSettings = async (req, res) => {
 
 // UPDATE setting
 exports.updateTeamCompositionSettings = async (req, res) => {
-  //   const errors = validationResult(req);
-  //   if (!errors.isEmpty()) {
-  //     return res.status(400).json({ errors: errors.array() });
-  //   }
-
   const { id } = req.params;
   const { startDate, endDate, speciality, year } = req.body;
 
@@ -120,13 +113,21 @@ exports.updateTeamCompositionSettings = async (req, res) => {
     const existing = await prisma.teamCompositionWindow.findUnique({
       where: { id },
     });
+
     if (!existing) {
       return res.status(404).json({ error: "Setting not found" });
     }
 
+    const updatedStart = startDate ? new Date(startDate) : existing.startDate;
+    const updatedEnd = endDate ? new Date(endDate) : existing.endDate;
+
+    if (updatedEnd <= updatedStart) {
+      return res.status(400).json({ error: "endDate must be after startDate" });
+    }
+
     const updateData = {};
-    if (startDate !== undefined) updateData.startDate = new Date(startDate);
-    if (endDate !== undefined) updateData.endDate = new Date(endDate);
+    if (startDate !== undefined) updateData.startDate = updatedStart;
+    if (endDate !== undefined) updateData.endDate = updatedEnd;
     if (speciality !== undefined) updateData.speciality = speciality;
     if (year !== undefined) updateData.year = year;
 
