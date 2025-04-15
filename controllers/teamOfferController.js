@@ -412,7 +412,7 @@ exports.deleteTeamMember = async (req, res) => {
       });
 
       // updating the status of the canceled applications of the deleted member
-      const canceledApplications = await tr.teamApplication.findMany({
+      const canceledApplications = await tx.teamApplication.findMany({
         where: {
           studentId: memberId,
           status: "canceled",
