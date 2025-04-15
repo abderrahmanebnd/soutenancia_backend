@@ -450,9 +450,9 @@ exports.deleteTeamMember = async (req, res) => {
 
     //sending the email to the deleted student
     const { teamOffer, student } = result;
-    const studentName = `${student.user.firstName} ${student.user.lastName}`;
-    const leaderName = `${teamOffer.leader.user.firstName} ${teamOffer.leader.user.lastName}`;
-
+    const studentName = `${student.user.firstName} ${student.user.lastName || ''}`;
+    const leaderName = `${teamOffer.leader.user.firstName} ${teamOffer.leader.user.lastName || ''}`;
+    
     await emailService
       .EmailToDeletedStudent(
         student.user.email,
