@@ -349,6 +349,36 @@ exports.deleteTeamMember = async (req, res) => {
     const { memberId } = req.body;
     const leader_id = req.user.Student.id;
 
+    const ExTeamOffer = await prisma.teamOffer.findUnique({
+      where: { id },
+    });
+
+    if (!ExTeamOffer) {
+      return res.status(404).json({ error: "Team offer not found" });
+    }
+
+    if (ExTeamOffer.leader_id !== leader_id) {
+      return res.status(403).json({ error: "You are not the team leader" });
+    }
+
+    // Vérification de l'existence de l'étudiant
+    const ExStudent = await prisma.student.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!ExStudent) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    // Vérification de l'existence du membre de l'équipe
+    const ExTeamMember = await prisma.teamMember.findFirst({
+      where: { studentId: memberId, teamOfferId: id },
+    });
+
+    if (!ExTeamMember) {
+      return res.status(404).json({ error: "Team member not found" });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const teamOffer = await tx.teamOffer.findUnique({
         where: { id },
@@ -368,23 +398,8 @@ exports.deleteTeamMember = async (req, res) => {
         },
       });
 
-      if (!student) {
-        return res.status(404).json({ error: "Student offer not found" });
-      }
-      if (!teamOffer) {
-        return res.status(404).json({ error: "Team offer not found" });
-      }
-      if (teamOffer.leader_id !== leader_id) {
-        return res.status(403).json({ error: "You are not the team leader" });
-      }
-      const teamMember = await tx.teamMember.findFirst({
-        where: { studentId: memberId, teamOfferId: id },
-      });
-      if (!teamMember) {
-        return res.status(404).json({ error: "Team member not found" });
-      }
       await tx.teamMember.delete({
-        where: { id: teamMember.id },
+        where: { id: ExTeamMember.id },
       });
       //updating the flag isInTeam
       await tx.student.update({
@@ -449,18 +464,23 @@ exports.deleteTeamMember = async (req, res) => {
     });
 
     //sending the email to the deleted student
-    const { teamOffer, student } = result;
-    const studentName = `${student.user.firstName} ${student.user.lastName || ''}`;
-    const leaderName = `${teamOffer.leader.user.firstName} ${teamOffer.leader.user.lastName || ''}`;
-    
-    await emailService
-      .EmailToDeletedStudent(
-        student.user.email,
-        studentName,
-        teamOffer.title,
-        leaderName
-      )
-      .catch((error) => console.log("Email error", error));
+    if (result && result.student && result.student.user) {
+      const studentName = `${result.student.user.firstName} ${
+        result.student.user.lastName || ""
+      }`;
+      const leaderName = `${result.teamOffer.leader.user.firstName} ${
+        result.teamOffer.leader.user.lastName || ""
+      }`;
+
+      await emailService
+        .EmailToDeletedStudent(
+          result.student.user.email,
+          studentName,
+          result.teamOffer.title,
+          leaderName
+        )
+        .catch((error) => console.log("Email error", error));
+    }
 
     res.status(204).end();
   } catch (error) {
