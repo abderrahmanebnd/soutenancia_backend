@@ -377,7 +377,7 @@ exports.deleteTeamMember = async (req, res) => {
       if (teamOffer.leader_id !== leader_id) {
         return res.status(403).json({ error: "You are not the team leader" });
       }
-      const teamMember = await prisma.teamMember.findFirst({
+      const teamMember = await tx.teamMember.findFirst({
         where: { studentId: memberId, teamOfferId: id },
       });
       if (!teamMember) {
