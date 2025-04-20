@@ -79,9 +79,11 @@ model TeamOffer {
   TeamApplication    TeamApplication[]
   TeamMembers        TeamMember[]
   ProjectApplication ProjectApplication[]
-  ProjectOffer       ProjectOffer[]
 
-  @@index([year, speciality]) // Optional: For faster querying
+  projectOfferId String?
+  projectOffer   ProjectOffer? @relation(fields: [projectOfferId], references: [id])
+
+  @@index([year, speciality])
 }
 
 model TeamApplication {
@@ -145,9 +147,7 @@ model ProjectOffer {
   status         TeamOfferStatus @default(open)
   maxTeamsNumber Int
   fileUrl        String?         @db.VarChar(255) // <-- Optional file field for the teacher
-
-  assignedTeamId String?
-  assignedTeam   TeamOffer? @relation(fields: [assignedTeamId], references: [id], onDelete: Cascade)
+  year           Int?
 
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -157,8 +157,9 @@ model ProjectOffer {
   assignmentType AssignmentType       @default(teacherApproval)
   applications   ProjectApplication[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  teamOffers TeamOffer[]
 }
 
 model ProjectApplication {
