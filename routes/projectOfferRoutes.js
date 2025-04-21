@@ -16,12 +16,12 @@ router
 
 router.route("/myProjectOffer").get(projectOfferController.getMyProjectOffer);
 
+router.route("/history").get(projectOfferController.getProjectOfferHistory);
+
 router
   .route("/:id")
   .patch(projectOfferController.updateProjectOffer)
   .get(projectOfferController.getProjectOffer)
   .delete(projectOfferController.deleteProjectOffer);
-
-router.route("/history").get(projectOfferController.getProjectOfferHistory);
 
 module.exports = router;

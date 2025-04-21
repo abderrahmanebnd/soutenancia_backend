@@ -61,7 +61,15 @@ exports.createProjectOffer = async (req, res) => {
 
 exports.getAllProjectOffers = async (req, res) => {
   try {
+    // TODO: return just the offers for the current user depending on his speciality
+    // TODO: use the speciality table in the student also and so on
     const offers = await prisma.projectOffer.findMany({
+      where: {
+        status: "open",
+        year: {
+          gte: new Date().getFullYear(), // Only show offers for the current year and future years
+        },
+      },
       include: {
         teacher: true,
         specialities: true,
@@ -116,7 +124,6 @@ exports.getProjectOffer = async (req, res) => {
   }
 };
 
-// PATCH /api/v1/project-offers/:id
 exports.updateProjectOffer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,9 +169,9 @@ exports.getProjectOfferHistory = async (req, res) => {
   try {
     const offers = await prisma.projectOffer.findMany({
       where: {
-        status: "closed",
+        // status: "closed",
         year: {
-          lte: new Date().getFullYear(),
+          lt: new Date().getFullYear(),
         },
       },
       include: {
