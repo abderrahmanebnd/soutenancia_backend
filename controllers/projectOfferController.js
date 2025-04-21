@@ -66,11 +66,14 @@ exports.getAllProjectOffers = async (req, res) => {
         teacher: true,
         specialities: true,
         applications: true,
-        assignedTeam: true,
+        assignedTeamsOffers: true,
       },
     });
 
-    res.status(200).json(offers);
+    res.status(200).json({
+      status: "success",
+      data: offers,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching project offers." });

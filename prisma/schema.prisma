@@ -140,7 +140,7 @@ model Teacher {
 
 model ProjectOffer {
   id             String          @id @default(cuid())
-  title          String          @db.VarChar(100)
+  title          String          @db.VarChar(150)
   description    String          @db.VarChar(1000)
   tools          String[]
   languages      String[]
@@ -157,9 +157,9 @@ model ProjectOffer {
   assignmentType AssignmentType       @default(teacherApproval)
   applications   ProjectApplication[]
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  teamOffers TeamOffer[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  assignedTeamsOffers TeamOffer[]
 }
 
 model ProjectApplication {
