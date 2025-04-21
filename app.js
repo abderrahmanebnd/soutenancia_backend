@@ -32,11 +32,16 @@ app.use(xss());
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/settings/teamComposition", teamCompositionSettingsRouter);
+app.use("/api/v1/specialities", require("./routes/specialityRoutes"));
+
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/students", studentRouter);
+app.use("/api/v1/teachers", require("./routes/teacherRoutes"));
+
 app.use("/api/v1/teamsOffers", teamOfferRouter);
 app.use("/api/v1/teamApplications", teamApplicationRouter);
-app.use("/api/v1/projectOffers", require("./routes/projectOfferRoutes"));
+
+app.use("/api/v1/projectsOffers", require("./routes/projectOfferRoutes"));
 
 app.all("*", (req, res) => {
   return res.status(404).json({

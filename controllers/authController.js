@@ -48,6 +48,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     enrollmentNumber,
     year,
     speciality,
+    department,
+    title,
   } = req.body;
 
   if (role && !["student", "teacher", "entreprise"].includes(role)) {
@@ -71,6 +73,15 @@ exports.signup = catchAsync(async (req, res, next) => {
                 enrollmentNumber,
                 year,
                 speciality,
+              },
+            }
+          : undefined,
+      Teacher:
+        role === "teacher"
+          ? {
+              create: {
+                department,
+                title,
               },
             }
           : undefined,
@@ -253,6 +264,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     });
 
   // Grant access to protected route
+
   req.user = freshUser;
 
   next();

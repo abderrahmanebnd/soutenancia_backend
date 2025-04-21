@@ -10,6 +10,7 @@ exports.createProjectOffer = async (req, res) => {
       languages,
       maxTeamsNumber,
       fileUrl,
+      year,
       assignmentType,
       specialities,
     } = req.body;
@@ -18,29 +19,43 @@ exports.createProjectOffer = async (req, res) => {
       where: { userId: req.user.id },
     });
 
-    const projectOffer = await prisma.projectOffer.create({
-      data: {
-        title,
-        description,
-        tools,
-        languages,
-        maxTeamsNumber,
-        fileUrl,
-        assignmentType,
-        teacherId: teacher.id,
-        specialities: {
-          connect: specialities?.map((id) => ({ id })),
-        },
+    if (!teacher) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Teacher not found for this user.",
+      });
+    }
+
+    // Build the data object dynamically
+    const data = {
+      title,
+      description,
+      tools,
+      languages,
+      maxTeamsNumber,
+      assignmentType,
+      teacherId: teacher.id,
+      specialities: {
+        connect: specialities?.map((id) => ({ id })),
       },
+    };
+
+    // Add optional fields if provided
+    if (fileUrl) data.fileUrl = fileUrl;
+    if (year) data.year = year;
+
+    const projectOffer = await prisma.projectOffer.create({
+      data,
       include: { specialities: true },
     });
 
     res.status(201).json(projectOffer);
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ message: "Something went wrong creating the project offer." });
+    res.status(500).json({
+      message: "Something went wrong creating the project offer.",
+      error: err.message,
+    });
   }
 };
 
@@ -130,7 +145,10 @@ exports.deleteProjectOffer = async (req, res) => {
 
     await prisma.projectOffer.delete({ where: { id } });
 
-    res.status(204).json({ message: "Project offer deleted successfully." });
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to delete project offer." });

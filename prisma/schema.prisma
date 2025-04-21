@@ -17,9 +17,9 @@ model User {
   role           Role      @default(student)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  Student        Student?
   resetOtpHash   String?
   resetOtpExpiry DateTime?
+  Student        Student?
   Teacher        Teacher?
 }
 
@@ -181,9 +181,12 @@ model ProjectApplication {
 
 model Speciality {
   id   String @id @default(cuid())
-  name String @unique @db.VarChar(40)
+  name String @db.VarChar(40)
+  year Int
 
   projectOffers ProjectOffer[] @relation("ProjectSpecialities")
+
+  @@unique([name, year])
 }
 
 enum AssignmentType {

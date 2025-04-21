@@ -41,6 +41,22 @@ const studentValidationSchema = z.object({
     .min(3, "Speciality must be at least 3 characters")
     .optional(),
 });
+const teacherValidationSchema = z.object({
+  firstName: z.string().min(3, "First name must be at least 3 characters"),
+  lastName: z
+    .string()
+    .min(3, "Last name must be at least 3 characters")
+    .optional(),
+  email: z.string().email("Invalid email format"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Au moins une majuscule")
+    .regex(/[0-9]/, "Au moins un chiffre"),
+  role: z.enum(["student", "teacher", "admin", "entreprise"]).optional(),
+  department: z.string().optional(),
+  title: z.string().optional(),
+});
 
 const prisma = new PrismaClient().$extends({
   model: {
@@ -50,6 +66,11 @@ const prisma = new PrismaClient().$extends({
           const validatedStudent = studentValidationSchema.safeParse(data);
           if (!validatedStudent.success) {
             throw new Error(validatedStudent?.error?.errors[0]?.message);
+          }
+        } else if (data.role === "teacher") {
+          const validatedTeacher = teacherValidationSchema.safeParse(data);
+          if (!validatedTeacher.success) {
+            throw new Error(validatedTeacher?.error?.errors[0]?.message);
           }
         } else {
           const validatedUser = userValidationSchema.safeParse(data);

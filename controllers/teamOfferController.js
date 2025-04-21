@@ -317,7 +317,10 @@ exports.deleteTeamOffer = async (req, res) => {
     await prisma.teamMember.delete({
       where: { studentId: leader_id },
     });
-    res.status(204).end();
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
   } catch (error) {
     console.error("Error deleting team offer:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -482,7 +485,10 @@ exports.deleteTeamMember = async (req, res) => {
         .catch((error) => console.log("Email error", error));
     }
 
-    res.status(204).end();
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
   } catch (error) {
     console.error("Error deleting team Member:", error);
     res.status(500).json({ error: "Internal Server Error" });
