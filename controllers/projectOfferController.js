@@ -13,6 +13,7 @@ exports.createProjectOffer = async (req, res) => {
       year,
       assignmentType,
       specialities,
+      coSupervisors,
     } = req.body;
 
     const teacher = await prisma.teacher.findUnique({
@@ -26,7 +27,6 @@ exports.createProjectOffer = async (req, res) => {
       });
     }
 
-    // Build the data object dynamically
     const data = {
       title,
       description,
@@ -38,15 +38,17 @@ exports.createProjectOffer = async (req, res) => {
       specialities: {
         connect: specialities?.map((id) => ({ id })),
       },
+      coSupervisors: {
+        connect: coSupervisors?.map((id) => ({ id })),
+      },
     };
 
-    // Add optional fields if provided
     if (fileUrl) data.fileUrl = fileUrl;
     if (year) data.year = year;
 
     const projectOffer = await prisma.projectOffer.create({
       data,
-      include: { specialities: true },
+      include: { specialities: true, coSupervisors: true, specialities: true },
     });
 
     res.status(201).json(projectOffer);
@@ -96,7 +98,12 @@ exports.getMyProjectOffer = async (req, res) => {
 
     const offers = await prisma.projectOffer.findMany({
       where: { teacherId: teacher.id },
-      include: { specialities: true, applications: true },
+      include: {
+        specialities: true,
+        applications: true,
+        teacher: true,
+        coSupervisors: true,
+      },
     });
 
     res.status(200).json(offers);
@@ -111,7 +118,12 @@ exports.getProjectOffer = async (req, res) => {
     const { id } = req.params;
     const offer = await prisma.projectOffer.findUnique({
       where: { id },
-      include: { specialities: true, applications: true, teacher: true },
+      include: {
+        specialities: true,
+        applications: true,
+        teacher: true,
+        coSupervisors: true,
+      },
     });
 
     if (!offer)
@@ -136,10 +148,16 @@ exports.updateProjectOffer = async (req, res) => {
       };
     }
 
+    if (data.coSupervisors) {
+      data.coSupervisors = {
+        set: [],
+        connect: data.coSupervisors.map((id) => ({ id })),
+      };
+    }
     const updated = await prisma.projectOffer.update({
       where: { id },
       data,
-      include: { specialities: true },
+      include: { specialities: true, coSupervisors: true, teacher: true },
     });
 
     res.status(200).json(updated);
