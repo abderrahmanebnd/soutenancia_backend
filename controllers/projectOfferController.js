@@ -101,8 +101,16 @@ exports.getMyProjectOffer = async (req, res) => {
       include: {
         specialities: true,
         applications: true,
-        teacher: true,
-        coSupervisors: true,
+        teacher: {
+          include: {
+            user: true,
+          },
+        },
+        coSupervisors: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -121,8 +129,16 @@ exports.getProjectOffer = async (req, res) => {
       include: {
         specialities: true,
         applications: true,
-        teacher: true,
-        coSupervisors: true,
+        teacher: {
+          include: {
+            user: true,
+          },
+        },
+        coSupervisors: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
