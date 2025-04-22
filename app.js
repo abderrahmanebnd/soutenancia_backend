@@ -11,6 +11,7 @@ const studentRouter = require("./routes/studentRoutes");
 const teamOfferRouter = require("./routes/teamOfferRoutes");
 const teamApplicationRouter = require("./routes/teamApplicationRoutes");
 const projectSelectionWindowRoutes = require("./routes/ProjectSelectionWindowRoutes");
+const projectApplicationRoutes = require("./routes/projectApplicationRoutes");
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/students", studentRouter);
 app.use("/api/v1/teamsOffers", teamOfferRouter);
 app.use("/api/v1/teamApplications", teamApplicationRouter);
+app.use("/api/v1", projectApplicationRoutes);
 
 app.all("*", (req, res) => {
   return res.status(404).json({
