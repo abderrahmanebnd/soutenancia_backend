@@ -49,6 +49,7 @@ exports.getMe = catchAsync(async (req, res, next) => {
           },
         },
       },
+      Teacher: true,
     },
   });
 

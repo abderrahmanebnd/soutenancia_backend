@@ -133,9 +133,10 @@ model Teacher {
   bio        String? @db.VarChar(1000)
   // projects ProjectOffer[]
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  ProjectOffer ProjectOffer[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  projectOffers        ProjectOffer[]
+  coSupervisedProjects ProjectOffer[] @relation("ProjectCoSupervisors")
 }
 
 model ProjectOffer {
@@ -151,6 +152,8 @@ model ProjectOffer {
 
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  coSupervisors Teacher[] @relation("ProjectCoSupervisors")
 
   specialities Speciality[] @relation("ProjectSpecialities")
 
@@ -177,6 +180,16 @@ model ProjectApplication {
   updatedAt DateTime @updatedAt
 
   @@unique([teamOfferId, projectOfferId]) // a student applies only once
+}
+
+model ProjectSelectionWindow {
+  id         String   @id @default(cuid())
+  speciality String?  @db.VarChar(40)
+  year       Int?
+  startDate  DateTime
+  endDate    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Speciality {
