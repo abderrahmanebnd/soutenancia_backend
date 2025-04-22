@@ -28,8 +28,8 @@ model Student {
   userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollmentNumber String?        @unique @db.VarChar(40)
-  year             Int?
-  speciality       String?        @db.VarChar(40)
+  specialityId     String
+  speciality       Speciality     @relation(fields: [specialityId], references: [id])
   isLeader         Boolean        @default(false)
   isInTeam         Boolean        @default(false)
   customSkills     Json           @default("[]")
@@ -73,8 +73,8 @@ model TeamOffer {
   general_required_skills  Skill[]
   specific_required_skills Json[]          @default([])
 
-  year       Int?
-  speciality String? @db.VarChar(40)
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  specialityId String     @db.VarChar(40)
 
   TeamApplication    TeamApplication[]
   TeamMembers        TeamMember[]
@@ -82,8 +82,6 @@ model TeamOffer {
 
   projectOfferId String?
   projectOffer   ProjectOffer? @relation(fields: [projectOfferId], references: [id])
-
-  @@index([year, speciality])
 }
 
 model TeamApplication {
@@ -114,13 +112,13 @@ model TeamMember {
 }
 
 model TeamCompositionWindow {
-  id         String   @id @default(cuid())
-  speciality String?  @db.VarChar(40)
-  year       Int?
-  startDate  DateTime
-  endDate    DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String     @id @default(cuid())
+  specialityId String
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Teacher {
@@ -146,12 +144,11 @@ model ProjectOffer {
   tools          String[]
   languages      String[]
   status         TeamOfferStatus @default(open)
-  maxTeamsNumber Int
-  fileUrl        String?         @db.VarChar(255) // <-- Optional file field for the teacher
+  maxTeamsNumber Int             @default(1)
   year           Int?
-
-  teacherId String
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  fileUrl        String?         @db.VarChar(255) // <-- Optional file field for the teacher
+  teacherId      String
+  teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   coSupervisors Teacher[] @relation("ProjectCoSupervisors")
 
@@ -183,13 +180,13 @@ model ProjectApplication {
 }
 
 model ProjectSelectionWindow {
-  id         String   @id @default(cuid())
-  speciality String?  @db.VarChar(40)
-  year       Int?
-  startDate  DateTime
-  endDate    DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String     @id @default(cuid())
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  specialityId String
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Speciality {
@@ -197,7 +194,11 @@ model Speciality {
   name String @db.VarChar(40)
   year Int
 
-  projectOffers ProjectOffer[] @relation("ProjectSpecialities")
+  projectOffers          ProjectOffer[]           @relation("ProjectSpecialities")
+  Student                Student[]
+  TeamOffer              TeamOffer[]
+  TeamCompositionWindow  TeamCompositionWindow[]
+  ProjectSelectionWindow ProjectSelectionWindow[]
 
   @@unique([name, year])
 }

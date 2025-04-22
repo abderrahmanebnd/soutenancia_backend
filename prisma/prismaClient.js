@@ -35,11 +35,7 @@ const studentValidationSchema = z.object({
     .string()
     .min(5, "Enrollment number must be at least 5 characters")
     .optional(),
-  year: z.number().int().min(1).optional(),
-  speciality: z
-    .string()
-    .min(3, "Speciality must be at least 3 characters")
-    .optional(),
+  specialityId: z.string(),
 });
 const teacherValidationSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters"),

@@ -62,8 +62,7 @@ exports.createTeamOffer = async (req, res) => {
       data: {
         title,
         description,
-        year: leader.year,
-        speciality: leader.speciality,
+        specialityId: leader.specialityId,
         leader: {
           connect: { id: leader_id }, // Connect leader by ID
         },
@@ -211,7 +210,6 @@ exports.getTeamOffer = async (req, res) => {
         leader: {
           select: {
             id: true,
-            year: true,
             speciality: true,
             user: {
               select: { firstName: true, lastName: true, email: true },
@@ -223,7 +221,6 @@ exports.getTeamOffer = async (req, res) => {
             student: {
               select: {
                 id: true,
-                year: true,
                 speciality: true,
                 user: {
                   select: { firstName: true, lastName: true, email: true },

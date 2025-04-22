@@ -27,7 +27,6 @@ exports.getMe = catchAsync(async (req, res, next) => {
           id: true,
           speciality: true,
           enrollmentNumber: true,
-          year: true,
           isLeader: true,
           isInTeam: true,
 

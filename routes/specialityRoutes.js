@@ -7,7 +7,7 @@ router
   .route("/")
   .get(authController.protect, specialityController.getAllSpecialities);
 
-router.use(authController.protect, authController.restrictTo("teacher")); // TODO:change this to admin
+router.use(authController.protect); // TODO:restrict this to admin
 router.route("/").post(specialityController.createSpeciality);
 
 router
