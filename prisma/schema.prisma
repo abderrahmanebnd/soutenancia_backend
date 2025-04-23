@@ -17,9 +17,10 @@ model User {
   role           Role      @default(student)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  Student        Student?
   resetOtpHash   String?
   resetOtpExpiry DateTime?
+  Student        Student?
+  Teacher        Teacher?
 }
 
 model Student {
@@ -27,8 +28,8 @@ model Student {
   userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollmentNumber String?        @unique @db.VarChar(40)
-  year             Int?
-  speciality       String?        @db.VarChar(40)
+  specialityId     String
+  speciality       Speciality     @relation(fields: [specialityId], references: [id])
   isLeader         Boolean        @default(false)
   isInTeam         Boolean        @default(false)
   customSkills     Json           @default("[]")
@@ -72,13 +73,15 @@ model TeamOffer {
   general_required_skills  Skill[]
   specific_required_skills Json[]          @default([])
 
-  year       Int?
-  speciality String? @db.VarChar(40)
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  specialityId String     @db.VarChar(40)
 
-  TeamApplication TeamApplication[]
-  TeamMembers     TeamMember[]
+  TeamApplication    TeamApplication[]
+  TeamMembers        TeamMember[]
+  ProjectApplication ProjectApplication[]
 
-  @@index([year, speciality]) // Optional: For faster querying
+  projectOfferId String?
+  projectOffer   ProjectOffer? @relation(fields: [projectOfferId], references: [id])
 }
 
 model TeamApplication {
@@ -109,13 +112,100 @@ model TeamMember {
 }
 
 model TeamCompositionWindow {
-  id         String   @id @default(cuid())
-  speciality String?  @db.VarChar(40)
-  year       Int?
-  startDate  DateTime
-  endDate    DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String     @id @default(cuid())
+  specialityId String
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Teacher {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  department String? @db.VarChar(100) // 
+  title      String? @db.VarChar(50) // "Prof.", "Dr.",
+  bio        String? @db.VarChar(1000)
+  // projects ProjectOffer[]
+
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  projectOffers        ProjectOffer[]
+  coSupervisedProjects ProjectOffer[] @relation("ProjectCoSupervisors")
+}
+
+model ProjectOffer {
+  id             String          @id @default(cuid())
+  title          String          @db.VarChar(150)
+  description    String          @db.VarChar(1000)
+  tools          String[]
+  languages      String[]
+  status         TeamOfferStatus @default(open)
+  maxTeamsNumber Int             @default(1)
+  year           Int?
+  fileUrl        String?         @db.VarChar(255) // <-- Optional file field for the teacher
+  teacherId      String
+  teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  coSupervisors Teacher[] @relation("ProjectCoSupervisors")
+
+  specialities Speciality[] @relation("ProjectSpecialities")
+
+  assignmentType AssignmentType       @default(teacherApproval)
+  applications   ProjectApplication[]
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  assignedTeamsOffers TeamOffer[]
+}
+
+model ProjectApplication {
+  id      String            @id @default(cuid())
+  message String?           @db.VarChar(1000)
+  status  ApplicationStatus @default(pending)
+
+  teamOfferId String
+  teamOffer   TeamOffer @relation(fields: [teamOfferId], references: [id], onDelete: Cascade)
+
+  projectOfferId String
+  projectOffer   ProjectOffer @relation(fields: [projectOfferId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamOfferId, projectOfferId]) // a student applies only once
+}
+
+model ProjectSelectionWindow {
+  id           String     @id @default(cuid())
+  speciality   Speciality @relation(fields: [specialityId], references: [id])
+  specialityId String
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Speciality {
+  id   String @id @default(cuid())
+  name String @db.VarChar(40)
+  year Int
+
+  projectOffers          ProjectOffer[]           @relation("ProjectSpecialities")
+  Student                Student[]
+  TeamOffer              TeamOffer[]
+  TeamCompositionWindow  TeamCompositionWindow[]
+  ProjectSelectionWindow ProjectSelectionWindow[]
+
+  @@unique([name, year])
+}
+
+enum AssignmentType {
+  auto
+  teacherApproval
 }
 
 enum Role {
