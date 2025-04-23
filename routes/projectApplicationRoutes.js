@@ -18,6 +18,7 @@ router.get(
   authController.restrictTo("student"),
   ProjectApplicationController.getMyApplications
 );
+
 router.post(
   "/projects/:id/apply",
   authController.restrictTo("student"),

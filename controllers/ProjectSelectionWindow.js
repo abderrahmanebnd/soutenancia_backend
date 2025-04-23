@@ -1,18 +1,13 @@
 const prisma = require("../prisma/prismaClient");
 
-async function isProjectSelectionActiveForTeam(speciality, year) {
+async function isProjectSelectionActiveForTeam(specialityId) {
   const now = new Date();
 
   const activeWindow = await prisma.projectSelectionWindow.findFirst({
     where: {
       startDate: { lte: now },
       endDate: { gte: now },
-      OR: [
-        { speciality: null, year: null },
-        { speciality: speciality, year: year },
-        { speciality: speciality, year: null },
-        { speciality: null, year: year },
-      ],
+      specialityId,
     },
   });
 
@@ -29,7 +24,7 @@ exports.isProjectSelectionActive = async (req, res, next) => {
     }
     const teamOffer = await prisma.teamOffer.findUnique({
       where: { id: teamOfferId },
-      select: { speciality: true, year: true },
+      include: { speciality: true },
     });
 
     if (!teamOffer) {
@@ -38,12 +33,7 @@ exports.isProjectSelectionActive = async (req, res, next) => {
       });
     }
 
-    if (
-      !(await isProjectSelectionActiveForTeam(
-        teamOffer.speciality,
-        teamOffer.year
-      ))
-    ) {
+    if (!(await isProjectSelectionActiveForTeam(teamOffer.specialityId))) {
       return res.status(403).json({
         message: "the period is not active for this team",
       });
@@ -59,7 +49,7 @@ exports.isProjectSelectionActive = async (req, res, next) => {
 
 exports.getProjectSelectionWindow = async (req, res) => {
   try {
-    let windows =[];
+    let windows = [];
     if (req.user.role === "admin" || req.user.role === "teacher") {
       windows = await prisma.projectSelectionWindow.findMany({
         orderBy: {
@@ -67,15 +57,10 @@ exports.getProjectSelectionWindow = async (req, res) => {
         },
       });
     } else if (req.user.Student) {
-      const { speciality, year } = req.user.Student;
+      const { specialityId } = req.user.Student;
       windows = await prisma.projectSelectionWindow.findMany({
         where: {
-          OR: [
-            { speciality: null, year: null },
-            { speciality, year },
-            { speciality, year: null },
-            { speciality: null, year },
-          ],
+          specialityId,
         },
         orderBy: {
           startDate: "desc",
@@ -112,7 +97,7 @@ exports.getProjectSelectionWindowById = async (req, res) => {
 
 exports.createProjectSelectionWindow = async (req, res) => {
   try {
-    const { startDate, endDate, speciality, year } = req.body;
+    const { startDate, endDate, specialityId } = req.body;
     if (!startDate || !endDate) {
       return res.status(400).json({
         error: "Les dates de début et de fin sont requises",
@@ -127,8 +112,7 @@ exports.createProjectSelectionWindow = async (req, res) => {
       data: {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        speciality,
-        year: year ? parseInt(year) : null ,
+        specialityId,
       },
     });
     res.status(201).json({
@@ -146,7 +130,7 @@ exports.createProjectSelectionWindow = async (req, res) => {
 exports.updateProjectSelectionWindow = async (req, res) => {
   try {
     const { id } = req.params;
-    const { startDate, endDate, speciality, year } = req.body;
+    const { startDate, endDate, specialityId } = req.body;
 
     // Vérifier si la fenêtre existe
     const existingWindow = await prisma.projectSelectionWindow.findUnique({
@@ -161,8 +145,7 @@ exports.updateProjectSelectionWindow = async (req, res) => {
     const updateData = {};
     if (startDate !== undefined) updateData.startDate = new Date(startDate);
     if (endDate !== undefined) updateData.endDate = new Date(endDate);
-    if (speciality !== undefined) updateData.speciality = speciality;
-    if (year !== undefined) updateData.year = year ? parseInt(year) : null;
+    if (specialityId !== undefined) updateData.specialityId = specialityId;
 
     // Validation des dates
     const newStartDate = updateData.startDate || existingWindow.startDate;

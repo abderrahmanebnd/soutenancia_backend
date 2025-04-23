@@ -139,6 +139,7 @@ exports.getProjectOffer = async (req, res) => {
             user: true,
           },
         },
+        assignedTeamsOffers: true,
       },
     });
 
