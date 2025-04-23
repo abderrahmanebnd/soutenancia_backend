@@ -175,11 +175,10 @@ exports.applyToProject = async (req, res) => {
 exports.getProjectApplications = async (req, res) => {
   try {
     const { id: projectOfferId } = req.params;
-    const teacherId = req.user.Teacher?.id;
-
+    
     const projectOffer = await prisma.projectOffer.findUnique({
       where: { id: projectOfferId },
-      include: { teacher: true },
+      include: { teacher: { include: { user: true } } },
     });
 
     if (!projectOffer) {
@@ -188,37 +187,42 @@ exports.getProjectApplications = async (req, res) => {
         message: "Project offer not found",
       });
     }
-    if (req.user.role !== "admin" && projectOffer.teacherId !== teacherId) {
-      return res.status(403).json({
-        status: "fail",
-        message: "You are not allowed to access applications for this project",
-      });
-    }
-    const applications = await prisma.projectApplication.findMany({
-      where: { projectOfferId },
-      include: {
-        teamOffer: {
-          include: {
-            leader: {
-              include: { user: true },
-            },
-            TeamMembers: {
-              include: {
-                student: {
-                  include: { user: true },
+    
+    if (req.user.role === "admin" || 
+        (req.user.role === "teacher" && projectOffer.teacher.user.id === req.user.id)) {
+      
+      const applications = await prisma.projectApplication.findMany({
+        where: { projectOfferId },
+        include: {
+          teamOffer: {
+            include: {
+              leader: {
+                include: { user: true },
+              },
+              TeamMembers: {
+                include: {
+                  student: {
+                    include: { user: true },
+                  },
                 },
               },
             },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.status(200).json({
-      status: "success",
-      results: applications.length,
-      data: applications,
-    });
+        orderBy: { createdAt: "desc" },
+      });
+
+      res.status(200).json({
+        status: "success",
+        results: applications.length,
+        data: applications,
+      });
+    } else {
+      return res.status(403).json({
+        status: "fail",
+        message: "You are not allowed to access applications for this project",
+      });
+    }
   } catch (error) {
     console.error("error fetching project applications", error);
     res.status(500).json({
