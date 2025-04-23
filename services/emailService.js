@@ -195,3 +195,99 @@ exports.EmailToDeletedStudent = async (
     throw new Error("Error while sending removal email");
   }
 };
+
+exports.sendProjectApplicationNotification = async (
+  teacherEmail,
+  teacherName,
+  projectTitle,
+  studentName,
+  teamTitle
+) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: teacherEmail,
+      subject: `New application for your project: ${projectTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>New Project Application</h2>
+          <p>Hello ${teacherName},</p>
+          <p>You have received a new application for your project <strong>${projectTitle}</strong>.</p>
+          <p><strong>Details:</strong></p>
+          <ul>
+            <li>Team: ${teamTitle}</li>
+            <li>Team Leader: ${studentName}</li>
+          </ul>
+          <p>Please log in to the platform to review this application and make a decision.</p>
+          <p>Best regards,<br>The Soutenancia Team</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error(
+      "Error sending project application notification email:",
+      error
+    );
+    return false;
+  }
+};
+
+exports.sendProjectApplicationAccepted = async (
+  studentEmail,
+  studentName,
+  projectTitle
+) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: studentEmail,
+      subject: `Application accepted for the project: ${projectTitle}`,
+      html: `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2>Congratulations! Your application has been accepted</h2>
+    <p>Hello ${studentName},</p>
+    <p>We are pleased to inform you that your application for the project <strong>${projectTitle}</strong> has been accepted!</p>
+    <p>Your team can now start working on this project. More details are available on the platform.</p>
+    <p>Best regards,<br>The Soutenancia Team</p>
+  </div>
+`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Error sending project application accepted email:", error);
+    return false;
+  }
+};
+exports.sendProjectApplicationRejected = async (
+  studentEmail,
+  studentName,
+  projectTitle
+) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: studentEmail,
+      subject: `Application rejected for the project: ${projectTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Information about your application</h2>
+          <p>Hello ${studentName},</p>
+          <p>We regret to inform you that your application for the project <strong>${projectTitle}</strong> was not accepted.</p>
+          <p>We encourage you to apply to other available projects on the platform.</p>
+          <p>Best regards,<br>The Soutenancia Team</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Error sending project application rejected email:", error);
+    return false;
+  }
+};

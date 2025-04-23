@@ -10,6 +10,9 @@ const userRouter = require("./routes/userRoutes");
 const studentRouter = require("./routes/studentRoutes");
 const teamOfferRouter = require("./routes/teamOfferRoutes");
 const teamApplicationRouter = require("./routes/teamApplicationRoutes");
+const projectSelectionWindowRoutes = require("./routes/ProjectSelectionWindowRoutes");
+const projectApplicationRoutes = require("./routes/projectApplicationRoutes");
+
 const app = express();
 
 app.use("/public", express.static(path.join(__dirname, "public")));
@@ -32,6 +35,7 @@ app.use(xss());
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/settings/teamComposition", teamCompositionSettingsRouter);
+app.use("/api/v1/settings/projectSelection", projectSelectionWindowRoutes);
 app.use("/api/v1/specialities", require("./routes/specialityRoutes"));
 
 app.use("/api/v1/users", userRouter);
@@ -40,6 +44,7 @@ app.use("/api/v1/teachers", require("./routes/teacherRoutes"));
 
 app.use("/api/v1/teamsOffers", teamOfferRouter);
 app.use("/api/v1/teamApplications", teamApplicationRouter);
+app.use("/api/v1", projectApplicationRoutes);
 
 app.use("/api/v1/projectsOffers", require("./routes/projectOfferRoutes"));
 
