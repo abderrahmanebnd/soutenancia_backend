@@ -1,18 +1,13 @@
 const prisma = require("../prisma/prismaClient");
 
-async function isTeamCompositionActiveForStudent(speciality, year) {
+async function isTeamCompositionActiveForStudent(specialityId) {
   const now = new Date();
 
   const activeWindow = await prisma.teamCompositionWindow.findFirst({
     where: {
       startDate: { lte: now }, // this means the start date is in the past or now
       endDate: { gte: now }, // this means the end date is in the future or now
-      OR: [
-        { speciality: null, year: null },
-        { speciality: speciality, year: year },
-        { speciality: speciality, year: null },
-        { speciality: null, year: year },
-      ],
+      specialityId,
     },
   });
 
@@ -22,9 +17,7 @@ async function isTeamCompositionActiveForStudent(speciality, year) {
 exports.isTeamCompositionActive = async (req, res, next) => {
   const student = req.user.Student;
 
-  if (
-    !(await isTeamCompositionActiveForStudent(student.speciality, student.year))
-  ) {
+  if (!(await isTeamCompositionActiveForStudent(student.specialityId))) {
     return res.status(403).json({
       message:
         "Team composition activities are currently closed for your speciality/year.",
@@ -42,12 +35,11 @@ exports.getTeamCompositionSettings = async (req, res) => {
     if (req.user.role === "admin") {
       data = await prisma.teamCompositionWindow.findMany();
     } else if (req.user.Student) {
-      const { speciality, year } = req.user.Student;
+      const { specialityId } = req.user.Student;
 
       data = await prisma.teamCompositionWindow.findMany({
         where: {
-          speciality,
-          year,
+          specialityId,
         },
       });
     }
@@ -81,7 +73,7 @@ exports.getTeamCompositionSettingsById = async (req, res) => {
 
 // CREATE new setting
 exports.createTeamCompositionSettings = async (req, res) => {
-  const { startDate, endDate, speciality, year } = req.body;
+  const { startDate, endDate, specialityId } = req.body;
 
   if (new Date(endDate) <= new Date(startDate)) {
     return res.status(400).json({ error: "endDate must be after startDate" });
@@ -92,8 +84,7 @@ exports.createTeamCompositionSettings = async (req, res) => {
       data: {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        speciality,
-        year,
+        specialityId,
       },
     });
 
@@ -107,7 +98,7 @@ exports.createTeamCompositionSettings = async (req, res) => {
 // UPDATE setting
 exports.updateTeamCompositionSettings = async (req, res) => {
   const { id } = req.params;
-  const { startDate, endDate, speciality, year } = req.body;
+  const { startDate, endDate, specialityId } = req.body;
 
   try {
     const existing = await prisma.teamCompositionWindow.findUnique({
@@ -128,8 +119,7 @@ exports.updateTeamCompositionSettings = async (req, res) => {
     const updateData = {};
     if (startDate !== undefined) updateData.startDate = updatedStart;
     if (endDate !== undefined) updateData.endDate = updatedEnd;
-    if (speciality !== undefined) updateData.speciality = speciality;
-    if (year !== undefined) updateData.year = year;
+    if (specialityId !== undefined) updateData.specialityId = specialityId;
 
     const updated = await prisma.teamCompositionWindow.update({
       where: { id },
