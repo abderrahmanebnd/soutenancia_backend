@@ -7,7 +7,23 @@ exports.getMyAssignedProject = async (req, res) => {
 
     const teamMembership = await prisma.teamMember.findFirst({
       where: { studentId },
-      include: { teamOffer: true },
+      include: {
+        teamOffer: {
+          include: {
+            assignedProject: {
+              include: {
+                teacher: {
+                  include: { user: true },
+                },
+                specialities: true,
+                coSupervisors: {
+                  include: { user: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
     if (!teamMembership) {
       return res.status(404).json({
@@ -15,15 +31,7 @@ exports.getMyAssignedProject = async (req, res) => {
         message: "No team membership found for this student",
       });
     }
-    const assignedProject = await prisma.projectOffer.findFirst({
-      where: { assignedTeamId: teamMembership.teamOfferId },
-      include: {
-        teacher: {
-          include: { user: true },
-        },
-        specialities: true,
-      },
-    });
+    const assignedProject = teamMembership.teamOffer.assignedProject;
 
     if (!assignedProject) {
       return res.status(404).json({
@@ -60,7 +68,7 @@ exports.applyToProject = async (req, res) => {
         },
         _count: {
           select: {
-            assignedTeamId: true,
+            assignedTeams: true,
           },
         },
       },
@@ -101,9 +109,7 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
-    const existingAssignment = await prisma.projectOffer.findFirst({
-      where: { assignedTeamId: teamOfferId },
-    });
+    const existingAssignment = teamOffer.assignedProjectId;
 
     if (existingAssignment) {
       return res.status(400).json({
@@ -126,7 +132,7 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
-    if (projectOffer._count.assignedTeamId >= projectOffer.maxTeamsNumber) {
+    if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
       return res.status(400).json({
         status: "fail",
         message: "max of teams have been reached for this project",
@@ -280,7 +286,15 @@ exports.acceptApplication = async (req, res) => {
     const application = await prisma.projectApplication.findUnique({
       where: { id },
       include: {
-        projectOffer: true,
+        projectOffer: {
+          include: {
+            _count: {
+              select: {
+                assignedTeams: true,
+              },
+            },
+          },
+        },
         teamOffer: {
           include: {
             leader: {
@@ -315,14 +329,10 @@ exports.acceptApplication = async (req, res) => {
       });
     }
 
-    const assignedTeamsCount = await prisma.projectOffer.count({
-      where: {
-        id: application.projectOfferId,
-        assignedTeamId: { not: null },
-      },
-    });
-
-    if (assignedTeamsCount >= application.projectOffer.maxTeamsNumber) {
+    if (
+      application.projectOffer._count.assignedTeams >=
+      application.projectOffer.maxTeamsNumber
+    ) {
       return res.status(400).json({
         status: "fail",
         message: "max teams have been reached for this project",

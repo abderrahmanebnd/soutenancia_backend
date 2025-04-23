@@ -80,8 +80,8 @@ model TeamOffer {
   TeamMembers        TeamMember[]
   ProjectApplication ProjectApplication[]
 
-  projectOfferId String?
-  projectOffer   ProjectOffer? @relation(fields: [projectOfferId], references: [id])
+  assignedProjectId String?
+  assignedProject   ProjectOffer? @relation(fields: [assignedProjectId], references: [id])
 }
 
 model TeamApplication {
@@ -157,9 +157,9 @@ model ProjectOffer {
   assignmentType AssignmentType       @default(teacherApproval)
   applications   ProjectApplication[]
 
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
-  assignedTeamsOffers TeamOffer[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  assignedTeams TeamOffer[]
 }
 
 model ProjectApplication {

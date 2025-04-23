@@ -17,7 +17,7 @@ exports.createTeamOffer = async (req, res) => {
   } = req.body;
 
   const leader_id = req.user.Student.id;
-
+  console.log("leader_id", leader_id);
   try {
     const existingTeamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id },
@@ -62,7 +62,9 @@ exports.createTeamOffer = async (req, res) => {
       data: {
         title,
         description,
-        specialityId: leader.specialityId,
+        speciality: {
+          connect: { id: leader.specialityId }, // Connect speciality by ID
+        },
         leader: {
           connect: { id: leader_id }, // Connect leader by ID
         },
