@@ -78,7 +78,7 @@ exports.getAllProjectOffers = async (req, res) => {
         applications: true,
         _count: {
           select: {
-            assignedTeamsOffers: true,
+            assignedTeams: true,
           },
         },
       },
@@ -115,7 +115,7 @@ exports.getMyProjectOffer = async (req, res) => {
             user: true,
           },
         },
-        assignedTeamsOffers: true,
+        assignedTeams: true,
       },
     });
 
@@ -144,7 +144,7 @@ exports.getProjectOffer = async (req, res) => {
             user: true,
           },
         },
-        assignedTeamsOffers: true,
+        assignedTeams: true,
       },
     });
 
@@ -218,7 +218,7 @@ exports.getProjectOfferHistory = async (req, res) => {
         specialities: true,
         _count: {
           select: {
-            assignedTeamsOffers: true,
+            assignedTeams: true,
           },
         },
       },
