@@ -58,6 +58,11 @@ exports.applyToProject = async (req, res) => {
         teacher: {
           include: { user: true },
         },
+        _count: {
+          select: {
+            assignedTeamId: true,
+          },
+        },
       },
     });
     if (!projectOffer) {
@@ -120,14 +125,8 @@ exports.applyToProject = async (req, res) => {
         message: "your team has already applied to this project",
       });
     }
-    const assignedTeamsCount = await prisma.projectOffer.count({
-      where: {
-        id: projectOfferId,
-        assignedTeamId: { not: null },
-      },
-    });
 
-    if (assignedTeamsCount >= projectOffer.maxTeamsNumber) {
+    if (projectOffer._count.assignedTeamId >= projectOffer.maxTeamsNumber) {
       return res.status(400).json({
         status: "fail",
         message: "max of teams have been reached for this project",
@@ -174,6 +173,7 @@ exports.getProjectApplications = async (req, res) => {
 
     const projectOffer = await prisma.projectOffer.findUnique({
       where: { id: projectOfferId },
+      include: { teacher: true },
     });
 
     if (!projectOffer) {
@@ -182,10 +182,10 @@ exports.getProjectApplications = async (req, res) => {
         message: "Project offer not found",
       });
     }
-    if (req.user.role !== "teacher" && req.user.role !== "admin") {
+    if (req.user.role !== "admin" && projectOffer.teacherId !== teacherId) {
       return res.status(403).json({
         status: "fail",
-        message: "you are not allowed to access this resource",
+        message: "You are not allowed to access applications for this project",
       });
     }
     const applications = await prisma.projectApplication.findMany({
@@ -214,7 +214,7 @@ exports.getProjectApplications = async (req, res) => {
       data: applications,
     });
   } catch (error) {
-    console.log("error fetching project applications", error);
+    console.error("error fetching project applications", error);
     res.status(500).json({
       status: "error",
       message: "An error occurred while fetching the project applications",
