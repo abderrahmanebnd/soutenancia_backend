@@ -28,8 +28,8 @@ model Student {
   userId           String         @unique
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollmentNumber String?        @unique @db.VarChar(40)
-  specialityId     String
-  speciality       Speciality     @relation(fields: [specialityId], references: [id])
+  specialityId     String?
+  speciality       Speciality?    @relation(fields: [specialityId], references: [id])
   isLeader         Boolean        @default(false)
   isInTeam         Boolean        @default(false)
   customSkills     Json           @default("[]")
