@@ -36,6 +36,10 @@ app.use(xss());
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/settings/teamComposition", teamCompositionSettingsRouter);
 app.use("/api/v1/settings/projectSelection", projectSelectionWindowRoutes);
+app.use(
+  "/api/v1/settings/assignmentTypes",
+  require("./routes/assignmentTypeRoutes")
+);
 app.use("/api/v1/specialities", require("./routes/specialityRoutes"));
 
 app.use("/api/v1/users", userRouter);

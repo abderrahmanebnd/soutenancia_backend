@@ -26,6 +26,33 @@ exports.createProjectOffer = async (req, res) => {
       });
     }
 
+    const specialitiesData = await prisma.speciality.findMany({
+      where: {
+        id: { in: specialities },
+      },
+    });
+
+    const years = [...new Set(specialitiesData.map((s) => s.year))];
+    if (years.length > 1) {
+      return res.status(400).json({
+        status: "fail",
+        message: "All selected specialities must belong to the same year.",
+      });
+    }
+
+    const selectedYear = years[0];
+
+    const yearAssignment = await prisma.yearAssignmentType.findUnique({
+      where: { year: selectedYear },
+    });
+
+    if (!yearAssignment) {
+      return res.status(400).json({
+        status: "fail",
+        message: `No assignment type configured for year ${selectedYear}.`,
+      });
+    }
+
     const data = {
       title,
       description,
@@ -33,8 +60,9 @@ exports.createProjectOffer = async (req, res) => {
       languages,
       maxTeamsNumber,
       teacherId: teacher.id,
+      assignmentType: yearAssignment.assignmentType,
       specialities: {
-        connect: specialities?.map((id) => ({ id })),
+        connect: specialities.map((id) => ({ id })),
       },
       coSupervisors: {
         connect: coSupervisors?.map((id) => ({ id })),
@@ -46,7 +74,7 @@ exports.createProjectOffer = async (req, res) => {
 
     const projectOffer = await prisma.projectOffer.create({
       data,
-      include: { specialities: true, coSupervisors: true, specialities: true },
+      include: { specialities: true, coSupervisors: true },
     });
 
     res.status(201).json(projectOffer);
