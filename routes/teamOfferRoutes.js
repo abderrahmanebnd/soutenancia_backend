@@ -16,16 +16,14 @@ router.use(authController.protect);
 router
   .route("/")
   .post(
-    authController.restrictTo("student"),
+    authController.restrictTo("student", "admin"),
     isTeamCompositionActive,
     validateTeamOffer,
     teamOfferController.createTeamOffer
   )
-  .get(
-    authController.restrictTo("student"),
-    isTeamCompositionActive,
-    teamOfferController.getAllTeamOffers
-  );
+  .get(teamOfferController.getAllTeamOffers);
+
+router.route("/completeTeams").get(teamOfferController.getAllCompletedTeams);
 
 router
   .route("/myTeamOffer")
@@ -37,10 +35,7 @@ router
 
 router
   .route("/:id")
-  .get(
-    authController.restrictTo("student", "teacher"),
-    teamOfferController.getTeamOffer
-  )
+  .get(teamOfferController.getTeamOffer)
   .patch(
     authController.restrictTo("student"),
     isTeamCompositionActive,
@@ -48,7 +43,7 @@ router
     teamOfferController.updateTeamOffer
   )
   .delete(
-    authController.restrictTo("student"),
+    authController.restrictTo("student", "admin"),
     isTeamCompositionActive,
     teamOfferController.deleteTeamOffer
   );

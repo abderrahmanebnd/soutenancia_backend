@@ -493,3 +493,31 @@ exports.deleteTeamMember = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.getAllCompletedTeams = async (req, res) => {
+  try {
+    const completedTeams = await prisma.teamOffer.findMany({
+      where: { status: "closed" },
+      include: {
+        leader: {
+          include: {
+            user: true,
+          },
+        },
+        TeamMembers: {
+          include: {
+            student: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    res.status(200).json(completedTeams);
+  } catch (error) {
+    console.error("Error getting completed teams:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
