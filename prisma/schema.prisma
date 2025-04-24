@@ -206,6 +206,7 @@ model Speciality {
 enum AssignmentType {
   auto
   teacherApproval
+  amiability
 }
 
 enum Role {

@@ -119,6 +119,28 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
+    if (projectOffer.assignmentType === "auto") {
+      await prisma.teamOffer.update({
+        where: { id: teamOfferId },
+        data: {
+          assignedProjectId: projectOfferId, // Assign the project to the team
+        },
+      });
+
+      const assignedTeamsCount = projectOffer._count.assignedTeams;
+
+      if (assignedTeamsCount + 1 >= projectOffer.maxTeamsNumber) {
+        await prisma.projectOffer.update({
+          where: { id: projectOfferId },
+          data: { status: "closed" },
+        });
+      }
+
+      return res.status(400).json({
+        status: "fail",
+        message: "This project is assigned automatically, you cannot apply",
+      });
+    }
     const existingApplication = await prisma.projectApplication.findFirst({
       where: {
         teamOfferId,
