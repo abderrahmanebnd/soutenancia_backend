@@ -7,23 +7,7 @@ exports.getMyAssignedProject = async (req, res) => {
 
     const teamMembership = await prisma.teamMember.findFirst({
       where: { studentId },
-      include: {
-        teamOffer: {
-          include: {
-            assignedProject: {
-              include: {
-                teacher: {
-                  include: { user: true },
-                },
-                specialities: true,
-                coSupervisors: {
-                  include: { user: true },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: { teamOffer: true },
     });
     if (!teamMembership) {
       return res.status(404).json({
@@ -31,22 +15,35 @@ exports.getMyAssignedProject = async (req, res) => {
         message: "No team membership found for this student",
       });
     }
-    const assignedProject = teamMembership.teamOffer.assignedProject;
+    const teamOffer = await prisma.teamOffer.findUnique({
+      where: { id: teamMembership.teamOfferId },
+      include: {
+        assignedProject: {
+          include: {
+            teacher: {
+              include: { user: true },
+            },
+            specialities: true,
+          },
+        },
+      },
+    });
 
-    if (!assignedProject) {
+    if (!teamOffer || !teamOffer.assignedProjectId) {
       return res.status(404).json({
         status: "fail",
         message: "No assigned project found for this team",
       });
     }
+
     res.status(200).json({
       status: "success",
       data: {
-        assignedProject,
+        assignedProject: teamOffer.assignedProject,
       },
     });
   } catch (error) {
-    console.log("error fetching assigned project", error);
+    console.error("Error fetching assigned project:", error);
     res.status(500).json({
       status: "error",
       message: "An error occurred while fetching the assigned project",
@@ -68,7 +65,7 @@ exports.applyToProject = async (req, res) => {
         },
         _count: {
           select: {
-            assignedTeams: true,
+            assignedTeamsOffers: true,
           },
         },
       },
@@ -109,9 +106,8 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
-    const existingAssignment = teamOffer.assignedProjectId;
-
-    if (existingAssignment) {
+    if (teamOffer.assignedProjectId) {
+      // Correction: utiliser assignedProjectId
       return res.status(400).json({
         status: "fail",
         message: "This team already has an assigned project",
@@ -132,7 +128,9 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
-    if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
+    if (
+      projectOffer._count.assignedTeamsOffers >= projectOffer.maxTeamsNumber
+    ) {
       return res.status(400).json({
         status: "fail",
         message: "max of teams have been reached for this project",
@@ -175,7 +173,7 @@ exports.applyToProject = async (req, res) => {
 exports.getProjectApplications = async (req, res) => {
   try {
     const { id: projectOfferId } = req.params;
-    
+
     const projectOffer = await prisma.projectOffer.findUnique({
       where: { id: projectOfferId },
       include: { teacher: { include: { user: true } } },
@@ -187,10 +185,14 @@ exports.getProjectApplications = async (req, res) => {
         message: "Project offer not found",
       });
     }
-    
-    if (req.user.role === "admin" || 
-        (req.user.role === "teacher" && projectOffer.teacher.user.id === req.user.id)) {
-      
+
+    // Solution simple: vérifier si l'utilisateur est admin OU si c'est le professeur propriétaire
+    if (
+      req.user.role === "admin" ||
+      (req.user.role === "teacher" &&
+        projectOffer.teacher.user.id === req.user.id)
+    ) {
+      // Suite du code pour récupérer les candidatures
       const applications = await prisma.projectApplication.findMany({
         where: { projectOfferId },
         include: {
@@ -285,17 +287,14 @@ exports.getMyApplications = async (req, res) => {
 exports.acceptApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const teacherId = req.user.Teacher?.id;
 
     const application = await prisma.projectApplication.findUnique({
       where: { id },
       include: {
         projectOffer: {
           include: {
-            _count: {
-              select: {
-                assignedTeams: true,
-              },
+            teacher: {
+              include: { user: true },
             },
           },
         },
@@ -318,7 +317,10 @@ exports.acceptApplication = async (req, res) => {
 
     if (
       req.user.role !== "admin" &&
-      application.projectOffer.teacherId !== teacherId
+      !(
+        req.user.role === "teacher" &&
+        application.projectOffer.teacher.user.id === req.user.id
+      )
     ) {
       return res.status(403).json({
         status: "fail",
@@ -333,20 +335,19 @@ exports.acceptApplication = async (req, res) => {
       });
     }
 
-    if (
-      application.projectOffer._count.assignedTeams >=
-      application.projectOffer.maxTeamsNumber
-    ) {
+    const assignedTeamsCount = await prisma.teamOffer.count({
+      where: {
+        assignedProjectId: application.projectOfferId,
+      },
+    });
+
+    if (assignedTeamsCount >= application.projectOffer.maxTeamsNumber) {
       return res.status(400).json({
         status: "fail",
         message: "max teams have been reached for this project",
       });
     }
 
-    // 5. Transaction pour:
-    // - Accepter la candidature
-    // - Assigner l'équipe au projet
-    // - Rejeter toutes les autres candidatures de cette équipe
     const result = await prisma.$transaction(async (tx) => {
       // Accepter cette candidature
       const updatedApplication = await tx.projectApplication.update({
@@ -355,10 +356,10 @@ exports.acceptApplication = async (req, res) => {
       });
 
       // Assigner l'équipe au projet
-      await tx.projectOffer.update({
-        where: { id: application.projectOfferId },
+      await tx.teamOffer.update({
+        where: { id: application.teamOfferId },
         data: {
-          assignedTeamId: application.teamOfferId,
+          assignedProjectId: application.projectOfferId,
         },
       });
 
@@ -409,12 +410,17 @@ exports.acceptApplication = async (req, res) => {
 exports.rejectApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const teacherId = req.user.Teacher?.id;
 
     const application = await prisma.projectApplication.findUnique({
       where: { id },
       include: {
-        projectOffer: true,
+        projectOffer: {
+          include: {
+            teacher: {
+              include: { user: true },
+            },
+          },
+        },
         teamOffer: {
           include: {
             leader: {
@@ -431,19 +437,24 @@ exports.rejectApplication = async (req, res) => {
         message: "application not found",
       });
     }
+
     if (
       req.user.role !== "admin" &&
-      application.projectOffer.teacherId !== teacherId
+      !(
+        req.user.role === "teacher" &&
+        application.projectOffer.teacher.user.id === req.user.id
+      )
     ) {
       return res.status(403).json({
         status: "fail",
-        message: "you are not allowed to accept or to reject this application",
+        message: "You are not allowed to accept or reject this application",
       });
     }
+
     if (application.status !== "pending") {
       return res.status(400).json({
         status: "fail",
-        message: `Cette candidature est déjà ${application.status}`,
+        message: `This application is already ${application.status}`,
       });
     }
     const updatedApplication = await prisma.projectApplication.update({
