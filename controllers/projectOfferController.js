@@ -11,7 +11,6 @@ exports.createProjectOffer = async (req, res) => {
       maxTeamsNumber,
       fileUrl,
       year,
-      assignmentType,
       specialities,
       coSupervisors,
     } = req.body;
@@ -33,7 +32,6 @@ exports.createProjectOffer = async (req, res) => {
       tools,
       languages,
       maxTeamsNumber,
-      assignmentType,
       teacherId: teacher.id,
       specialities: {
         connect: specialities?.map((id) => ({ id })),
@@ -175,6 +173,13 @@ exports.updateProjectOffer = async (req, res) => {
         set: [],
         connect: data.coSupervisors.map((id) => ({ id })),
       };
+    }
+
+    if (data.assignmentType) {
+      data.assignmentType = undefined;
+      res.status(400).json({
+        message: "Assignment type cannot be updated.",
+      });
     }
     const updated = await prisma.projectOffer.update({
       where: { id },
