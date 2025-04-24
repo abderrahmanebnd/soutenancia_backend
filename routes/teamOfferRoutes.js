@@ -11,26 +11,54 @@ const {
 
 const router = express.Router();
 
-router.use(
-  authController.protect,
-  authController.restrictTo("student"),
-  isTeamCompositionActive
-);
+router.use(authController.protect);
 
 router
   .route("/")
-  .post(validateTeamOffer, teamOfferController.createTeamOffer)
-  .get(teamOfferController.getAllTeamOffers);
+  .post(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    validateTeamOffer,
+    teamOfferController.createTeamOffer
+  )
+  .get(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    teamOfferController.getAllTeamOffers
+  );
 
-router.route("/myTeamOffer").get(teamOfferController.getMyTeamOffer);
+router
+  .route("/myTeamOffer")
+  .get(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    teamOfferController.getMyTeamOffer
+  );
 
 router
   .route("/:id")
-  .patch(validateUpdateTeamOffer, teamOfferController.updateTeamOffer)
-  .get(teamOfferController.getTeamOffer)
-  .delete(teamOfferController.deleteTeamOffer);
+  .get(
+    authController.restrictTo("student", "teacher"),
+    teamOfferController.getTeamOffer
+  )
+  .patch(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    validateUpdateTeamOffer,
+    teamOfferController.updateTeamOffer
+  )
+  .delete(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    teamOfferController.deleteTeamOffer
+  );
 
 router
   .route("/:id/deleteTeamMember")
-  .delete(teamOfferController.deleteTeamMember);
+  .delete(
+    authController.restrictTo("student"),
+    isTeamCompositionActive,
+    teamOfferController.deleteTeamMember
+  );
+
 module.exports = router;
