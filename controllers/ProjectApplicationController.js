@@ -24,6 +24,11 @@ exports.getMyAssignedProject = async (req, res) => {
               include: { user: true },
             },
             specialities: true,
+            coSupervisors: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
       },
@@ -65,7 +70,7 @@ exports.applyToProject = async (req, res) => {
         },
         _count: {
           select: {
-            assignedTeamsOffers: true,
+            assignedTeams: true,
           },
         },
       },
@@ -128,9 +133,7 @@ exports.applyToProject = async (req, res) => {
       });
     }
 
-    if (
-      projectOffer._count.assignedTeamsOffers >= projectOffer.maxTeamsNumber
-    ) {
+    if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
       return res.status(400).json({
         status: "fail",
         message: "max of teams have been reached for this project",
@@ -296,6 +299,11 @@ exports.acceptApplication = async (req, res) => {
             teacher: {
               include: { user: true },
             },
+            _count: {
+              select: {
+                assignedTeams: true,
+              },
+            },
           },
         },
         teamOffer: {
@@ -335,11 +343,7 @@ exports.acceptApplication = async (req, res) => {
       });
     }
 
-    const assignedTeamsCount = await prisma.teamOffer.count({
-      where: {
-        assignedProjectId: application.projectOfferId,
-      },
-    });
+    const assignedTeamsCount = application.projectOffer._count.assignedTeams;
 
     if (assignedTeamsCount >= application.projectOffer.maxTeamsNumber) {
       return res.status(400).json({
