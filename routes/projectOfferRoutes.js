@@ -4,15 +4,13 @@ const router = express.Router();
 const projectOfferController = require("../controllers/projectOfferController");
 const authController = require("../controllers/authController");
 
-router.use(
-  authController.protect,
-  authController.restrictTo("teacher", "admin")
-);
+router.use(authController.protect);
 
-router
-  .route("/")
-  .post(projectOfferController.createProjectOffer)
-  .get(projectOfferController.getAllProjectOffers);
+router.route("/").get(projectOfferController.getAllProjectOffers);
+
+router.use(authController.restrictTo("teacher", "admin"));
+
+router.route("/").post(projectOfferController.createProjectOffer);
 
 router.route("/myProjectOffer").get(projectOfferController.getMyProjectOffer);
 

@@ -12,6 +12,7 @@ exports.createProjectOffer = async (req, res) => {
       fileUrl,
       year,
       specialities,
+      chosedTeamsIds,
       coSupervisors,
     } = req.body;
 
@@ -89,33 +90,59 @@ exports.createProjectOffer = async (req, res) => {
 
 exports.getAllProjectOffers = async (req, res) => {
   try {
-    // TODO: return just the offers for the current user depending on his speciality
-    // TODO: use the speciality table in the student also and so on
-    const offers = await prisma.projectOffer.findMany({
-      where: {
-        status: "open",
-        year: {
-          gte: new Date().getFullYear(), // Only show offers for the current year and future years
-        },
-      },
-      include: {
-        teacher: true,
-        specialities: true,
-        applications: true,
-        _count: {
-          select: {
-            assignedTeams: true,
+    let offers = [];
+    if (req.user.role === "student") {
+      const studentSpecialityId = req.user.Student.specialityId;
+
+      offers = await prisma.projectOffer.findMany({
+        where: {
+          status: "open",
+          year: {
+            gte: new Date().getFullYear(),
+          },
+          specialities: {
+            some: {
+              id: studentSpecialityId,
+            },
           },
         },
-      },
-    });
-
+        include: {
+          teacher: true,
+          specialities: true,
+          applications: true,
+          _count: {
+            select: {
+              assignedTeams: true,
+            },
+          },
+        },
+      });
+    } else {
+      offers = await prisma.projectOffer.findMany({
+        where: {
+          status: "open",
+          year: {
+            gte: new Date().getFullYear(),
+          },
+        },
+        include: {
+          teacher: true,
+          specialities: true,
+          applications: true,
+          _count: {
+            select: {
+              assignedTeams: true,
+            },
+          },
+        },
+      });
+    }
     res.status(200).json({
       status: "success",
       data: offers,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching project offers:", err);
     res.status(500).json({ message: "Error fetching project offers." });
   }
 };

@@ -252,7 +252,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   // 3) Check if user still exists
   const freshUser = await prisma.user.findUnique({
     where: { id: decoded.id },
-    include: { Student: true },
+    include: { Student: true, Teacher: true },
   });
 
   if (!freshUser)

@@ -120,10 +120,11 @@ exports.applyToProject = async (req, res) => {
     }
 
     if (projectOffer.assignmentType === "auto") {
+      // TODO: send email to the teacher
       await prisma.teamOffer.update({
         where: { id: teamOfferId },
         data: {
-          assignedProjectId: projectOfferId, // Assign the project to the team
+          assignedProjectId: projectOfferId,
         },
       });
 
@@ -136,56 +137,61 @@ exports.applyToProject = async (req, res) => {
         });
       }
 
-      return res.status(400).json({
-        status: "fail",
-        message: "This project is assigned automatically, you cannot apply",
-      });
-    }
-    const existingApplication = await prisma.projectApplication.findFirst({
-      where: {
-        teamOfferId,
-        projectOfferId,
-      },
-    });
-
-    if (existingApplication) {
-      return res.status(400).json({
-        status: "fail",
-        message: "your team has already applied to this project",
+      return res.status(200).json({
+        status: "success",
+        message: "Team has been auto-assigned to the project",
       });
     }
 
-    if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
-      return res.status(400).json({
-        status: "fail",
-        message: "max of teams have been reached for this project",
+    if (projectOffer.assignmentType === "teacherApproval") {
+      const existingApplication = await prisma.projectApplication.findFirst({
+        where: {
+          teamOfferId,
+          projectOfferId,
+        },
+      });
+
+      if (existingApplication) {
+        return res.status(400).json({
+          status: "fail",
+          message: "your team has already applied to this project",
+        });
+      }
+
+      if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
+        return res.status(400).json({
+          status: "fail",
+          message: "max of teams have been reached for this project",
+        });
+      }
+      const application = await prisma.projectApplication.create({
+        data: {
+          projectOfferId,
+          teamOfferId,
+          message,
+          status: "pending",
+        },
+      });
+
+      await emailService
+        .sendProjectApplicationNotification(
+          projectOffer.teacher.user.email,
+          projectOffer.teacher.user.firstName,
+          projectOffer.title,
+          teamOffer.leader.user.firstName +
+            " " +
+            teamOffer.leader.user.lastName,
+          teamOffer.title
+        )
+        .catch((error) => console.error("Email error:", error));
+
+      res.status(201).json({
+        status: "success",
+        data: {
+          application,
+        },
       });
     }
-    const application = await prisma.projectApplication.create({
-      data: {
-        projectOfferId,
-        teamOfferId,
-        message,
-        status: "pending",
-      },
-    });
-
-    await emailService
-      .sendProjectApplicationNotification(
-        projectOffer.teacher.user.email,
-        projectOffer.teacher.user.firstName,
-        projectOffer.title,
-        teamOffer.leader.user.firstName + " " + teamOffer.leader.user.lastName,
-        teamOffer.title
-      )
-      .catch((error) => console.error("Email error:", error));
-
-    res.status(201).json({
-      status: "success",
-      data: {
-        application,
-      },
-    });
   } catch (error) {
     console.log("error applying to project", error);
     res.status(500).json({
