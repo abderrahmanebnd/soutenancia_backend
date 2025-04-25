@@ -46,11 +46,12 @@ exports.signup = catchAsync(async (req, res, next) => {
     password,
     role,
     enrollmentNumber,
-    year,
-    speciality,
+    specialityId,
+    department,
+    title,
   } = req.body;
 
-  if (role && !["student", "teacher", "entreprise"].includes(role)) {
+  if (role && !["student", "teacher", "entreprise", "admin"].includes(role)) {
     return res.status(400).json({
       status: "fail",
       message: "Role must be either student, teacher or entreprise",
@@ -69,8 +70,16 @@ exports.signup = catchAsync(async (req, res, next) => {
           ? {
               create: {
                 enrollmentNumber,
-                year,
-                speciality,
+                specialityId,
+              },
+            }
+          : undefined,
+      Teacher:
+        role === "teacher"
+          ? {
+              create: {
+                department,
+                title,
               },
             }
           : undefined,
@@ -253,6 +262,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     });
 
   // Grant access to protected route
+
   req.user = freshUser;
 
   next();
