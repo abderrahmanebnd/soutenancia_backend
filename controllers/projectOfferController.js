@@ -99,7 +99,7 @@ exports.createProjectOffer = async (req, res) => {
       yearAssignment.assignmentType === "amiability" &&
       chosedTeamsIds?.length === maxTeamsNumber
     ) {
-      data.closed = true;
+      data.status = "closed";
     }
     const projectOffer = await prisma.projectOffer.create({
       data,
@@ -357,11 +357,11 @@ exports.updateProjectOffer = async (req, res) => {
 
     if (
       assignmentType === "amiability" &&
-      chosedTeamsIds?.length >= maxTeamsNumber
+      chosedTeamsIds?.length === maxTeamsNumber
     ) {
-      updateData.closed = true;
+      updateData.status = "closed";
     } else {
-      updateData.closed = false;
+      updateData.status = "open";
     }
 
     // Update the project offer
@@ -371,8 +371,7 @@ exports.updateProjectOffer = async (req, res) => {
       include: { specialities: true, coSupervisors: true, teacher: true },
     });
 
-    // If type is amiability, manage team assignments
-    if (assignmentType === "amiability") {
+    if (assignmentType === "amiability" && chosedTeamsIds?.length) {
       // Unassign all current teams
       await prisma.team.updateMany({
         where: { projectOfferId: updatedProject.id },
