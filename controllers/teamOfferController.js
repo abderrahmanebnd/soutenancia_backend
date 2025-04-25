@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const prisma = require("../prisma/prismaClient");
 const emailService = require("../services/emailService.js");
+const { assign } = require("nodemailer/lib/shared/index.js");
 
 exports.createTeamOffer = async (req, res) => {
   const errors = validationResult(req);
@@ -497,7 +498,7 @@ exports.deleteTeamMember = async (req, res) => {
 exports.getAllCompletedTeams = async (req, res) => {
   try {
     const completedTeams = await prisma.teamOffer.findMany({
-      where: { status: "closed" },
+      where: { status: "closed", assignedProjectId: null },
       include: {
         leader: {
           include: {
@@ -515,7 +516,11 @@ exports.getAllCompletedTeams = async (req, res) => {
         },
       },
     });
-    res.status(200).json(completedTeams);
+    res.status(200).json({
+      status: "success",
+      results: completedTeams.length,
+      data: completedTeams,
+    });
   } catch (error) {
     console.error("Error getting completed teams:", error);
     res.status(500).json({ error: "Internal Server Error" });

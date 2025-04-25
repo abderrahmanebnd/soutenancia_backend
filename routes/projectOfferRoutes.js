@@ -8,18 +8,40 @@ router.use(authController.protect);
 
 router.route("/").get(projectOfferController.getAllProjectOffers);
 
-router.use(authController.restrictTo("teacher", "admin"));
+router
+  .route("/")
+  .post(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.createProjectOffer
+  );
 
-router.route("/").post(projectOfferController.createProjectOffer);
+router
+  .route("/myProjectOffer")
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getMyProjectOffer
+  );
 
-router.route("/myProjectOffer").get(projectOfferController.getMyProjectOffer);
-
-router.route("/history").get(projectOfferController.getProjectOfferHistory);
+router
+  .route("/history")
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getProjectOfferHistory
+  );
 
 router
   .route("/:id")
-  .patch(projectOfferController.updateProjectOffer)
-  .get(projectOfferController.getProjectOffer)
-  .delete(projectOfferController.deleteProjectOffer);
+  .patch(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.updateProjectOffer
+  )
+  .get(
+    authController.restrictTo("teacher", "admin", "student"),
+    projectOfferController.getProjectOffer
+  )
+  .delete(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.deleteProjectOffer
+  );
 
 module.exports = router;
