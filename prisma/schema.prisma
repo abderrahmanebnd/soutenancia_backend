@@ -146,7 +146,8 @@ model ProjectOffer {
   status         TeamOfferStatus @default(open)
   maxTeamsNumber Int             @default(1)
   year           Int?
-  fileUrl        String?         @db.VarChar(255) // <-- Optional file field for the teacher
+  fileUrl           String?    @db.VarChar(255)
+  cloudinaryPublicId String?    @db.VarChar(255)
   teacherId      String
   teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
