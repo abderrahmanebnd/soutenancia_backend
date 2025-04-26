@@ -145,7 +145,9 @@ exports.applyToProject = async (req, res) => {
       where: {
         teamOfferId,
         projectOfferId,
-      },
+        status: {
+          notIn: ["canceled"],
+      },}
     });
 
     if (existingApplication) {
