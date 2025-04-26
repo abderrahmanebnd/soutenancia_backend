@@ -548,15 +548,13 @@ exports.cancelApplication = async (req, res) => {
       });
     }
 
-    const updatedApplication = await prisma.projectApplication.update({
+    await prisma.projectApplication.delete({
       where: { id },
-      data: { status: "canceled" },
     });
 
     res.status(200).json({
       status: "success",
-      message: "applciation canceled successfully",
-      data: updatedApplication,
+      message: "applciation canceled and removed successfully",
     });
   } catch (error) {
     console.error("Error canceling application:", error);
