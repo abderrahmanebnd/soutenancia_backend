@@ -130,6 +130,11 @@ exports.updateTeamOffer = async (req, res) => {
     // Check if team offer exists
     const existingTeamOffer = await prisma.teamOffer.findUnique({
       where: { id },
+      include: {
+        _count: {
+          select: { TeamMembers: true },
+        },
+      },
     });
 
     if (!existingTeamOffer) {
@@ -141,6 +146,26 @@ exports.updateTeamOffer = async (req, res) => {
       return res
         .status(403)
         .json({ error: "You are not the leader of this team offer" });
+    }
+
+    if (max_members !== undefined) {
+      const currentMembersCount = existingTeamOffer._count.TeamMembers;
+
+      //First Case
+      if (max_members < currentMembersCount) {
+        return res.status(400).json({
+          error: `Cannot reduce max members to ${max_members} as the team already has ${currentMembersCount} members`,
+        });
+      }
+
+      //Second Case
+      if (
+        existingTeamOffer.status === "closed" &&
+        max_members > currentMembersCount
+      ) {
+        // Force le statut à "open" même si status n'était pas dans les champs à mettre à jour
+        status = "open";
+      }
     }
 
     const updateData = {};

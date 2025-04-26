@@ -152,10 +152,39 @@ exports.applyToProject = async (req, res) => {
       });
 
       if (existingApplication) {
-        return res.status(400).json({
-          status: "fail",
-          message: "your team has already applied to this project",
-        });
+        if (existingApplication.status === "canceled") {
+          const updatedApplication = await prisma.projectApplication.update({
+            where: { id: existingApplication.id },
+            data: {
+              status: "pending",
+              message: message || existingApplication.message, // new message if its exist
+            },
+          });
+
+          await emailService
+            .sendProjectApplicationNotification(
+              projectOffer.teacher.user.email,
+              projectOffer.teacher.user.firstName,
+              projectOffer.title,
+              teamOffer.leader.user.firstName +
+                " " +
+                teamOffer.leader.user.lastName,
+              teamOffer.title
+            )
+            .catch((error) => console.error("Email error:", error));
+          return res.status(200).json({
+            status: "success",
+            message: "Application reactivated successfully",
+            data: {
+              application: updatedApplication,
+            },
+          });
+        } else {
+          return res.status(400).json({
+            status: "fail",
+            message: "your team has already applied to this project",
+          });
+        }
       }
 
       if (projectOffer._count.assignedTeams >= projectOffer.maxTeamsNumber) {
@@ -548,13 +577,15 @@ exports.cancelApplication = async (req, res) => {
       });
     }
 
-    await prisma.projectApplication.delete({
+    const updatedApplication = await prisma.projectApplication.update({
       where: { id },
+      data: { status: "canceled" },
     });
 
     res.status(200).json({
       status: "success",
-      message: "applciation canceled and removed successfully",
+      message: "applciation canceled successfully",
+      data: updatedApplication,
     });
   } catch (error) {
     console.error("Error canceling application:", error);
