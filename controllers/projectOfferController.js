@@ -116,7 +116,7 @@ exports.createProjectOffer = async (req, res) => {
           prisma.teamOffer.update({
             where: { id: teamId },
             data: {
-              projectOffer: { connect: { id: projectOffer.id } },
+              assignedProject: { connect: { id: projectOffer.id } },
             },
           })
         )
