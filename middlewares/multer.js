@@ -88,3 +88,22 @@ exports.cleanupFile = (filePath) => {
     console.error("Error cleaning up file:", error);
   }
 };
+
+// Middleware to clean up the file if an error occurs after upload
+exports.cleanupOnError = (req, res, next) => {
+  // Stocker la fonction originale res.json
+  const originalJson = res.json;
+
+  // Remplacer res.json par notre propre implémentation
+  res.json = function (body) {
+    // Si la réponse est une erreur (status >= 400) et qu'un fichier existe
+    if (res.statusCode >= 400 && req.file) {
+      exports.cleanupFile(req.file.path);
+    }
+
+    // Appeler la fonction originale
+    return originalJson.call(this, body);
+  };
+
+  next();
+};

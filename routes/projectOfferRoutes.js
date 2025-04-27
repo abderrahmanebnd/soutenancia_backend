@@ -13,6 +13,7 @@ router
   .route("/")
   .post(
     uploadSingle,
+    cleanupOnError,
     handleMulterError,
     projectOfferController.createProjectOffer
   )
@@ -26,6 +27,7 @@ router
   .route("/:id")
   .patch(
     uploadSingle,
+    cleanupOnError,
     handleMulterError,
     projectOfferController.updateProjectOffer
   )
