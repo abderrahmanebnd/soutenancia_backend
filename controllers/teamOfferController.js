@@ -1,7 +1,6 @@
 const { validationResult } = require("express-validator");
 const prisma = require("../prisma/prismaClient");
 const emailService = require("../services/emailService.js");
-const { assign } = require("nodemailer/lib/shared/index.js");
 
 exports.createTeamOffer = async (req, res) => {
   const errors = validationResult(req);
@@ -18,7 +17,6 @@ exports.createTeamOffer = async (req, res) => {
   } = req.body;
 
   const leader_id = req.user.Student.id;
-  console.log("leader_id", leader_id);
   try {
     const existingTeamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id },
@@ -97,7 +95,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true },
+      data: { isLeader: true, isInTeam: true },
     });
 
     res.status(201).json(teamOffer);
@@ -215,7 +213,7 @@ exports.updateTeamOffer = async (req, res) => {
     if (new_leader_id !== undefined && new_leader_id !== leader_id) {
       await prisma.student.update({
         where: { id: leader_id },
-        data: { isLeader: false },
+        data: { isLeader: false, isInTeam: false },
       });
     }
 

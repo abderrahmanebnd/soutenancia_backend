@@ -28,6 +28,7 @@ router.post(
 router.patch(
   "/applications/:id/cancel",
   authController.restrictTo("student"),
+  ProjectSelectionWindowController.isProjectSelectionActive,
   ProjectApplicationController.cancelApplication
 );
 
