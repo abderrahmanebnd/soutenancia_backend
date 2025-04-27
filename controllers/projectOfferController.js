@@ -277,7 +277,7 @@ exports.updateProjectOffer = async (req, res) => {
 
     const existingProject = await prisma.projectOffer.findUnique({
       where: { id },
-      include: { teacher: true, teams: true },
+      include: { teacher: true, assignedTeams: true },
     });
 
     if (!existingProject) {
@@ -385,7 +385,7 @@ exports.updateProjectOffer = async (req, res) => {
             prisma.team.update({
               where: { id: teamId },
               data: {
-                projectOffer: { connect: { id: updatedProject.id } },
+                assignedProject: { connect: { id: updatedProject.id } },
               },
             })
           )
