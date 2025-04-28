@@ -106,7 +106,6 @@ exports.createProjectOffer = async (req, res) => {
       include: { specialities: true, coSupervisors: true },
     });
 
-    // Assign teams after offer is created (if amiability)
     if (
       yearAssignment.assignmentType === "amiability" &&
       chosedTeamsIds?.length
@@ -287,42 +286,70 @@ exports.updateProjectOffer = async (req, res) => {
       });
     }
 
-    // Assignment type is fixed, reject if attempted
     if (req.body.assignmentType) {
       return res.status(400).json({
         message: "Assignment type cannot be updated.",
       });
     }
 
-    const specialitiesData = await prisma.speciality.findMany({
-      where: { id: { in: specialities } },
-    });
+    let assignmentType = existingProject.assignmentType;
 
-    const years = [...new Set(specialitiesData.map((s) => s.year))];
+    const updateData = {};
 
-    if (years.length > 1) {
-      return res.status(400).json({
-        status: "fail",
-        message: "All selected specialities must belong to the same year.",
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (tools !== undefined) updateData.tools = tools;
+    if (languages !== undefined) updateData.languages = languages;
+    if (maxTeamsNumber !== undefined)
+      updateData.maxTeamsNumber = maxTeamsNumber;
+    if (fileUrl !== undefined) updateData.fileUrl = fileUrl;
+    if (year !== undefined) updateData.year = year;
+
+    if (specialities !== undefined) {
+      const specialitiesData = await prisma.speciality.findMany({
+        where: { id: { in: specialities } },
       });
+
+      const years = [...new Set(specialitiesData.map((s) => s.year))];
+
+      if (years.length > 1) {
+        return res.status(400).json({
+          status: "fail",
+          message: "All selected specialities must belong to the same year.",
+        });
+      }
+
+      updateData.specialities = {
+        set: [],
+        connect: specialities.map((id) => ({ id })),
+      };
+
+      const selectedYear = years[0];
+      const yearAssignment = await prisma.yearAssignmentType.findUnique({
+        where: { year: selectedYear },
+      });
+
+      assignmentType = yearAssignment?.assignmentType || "teacherApproval";
     }
 
-    const selectedYear = years[0];
+    if (coSupervisors !== undefined) {
+      updateData.coSupervisors = {
+        set: [],
+        connect: coSupervisors.map((id) => ({ id })),
+      };
+    }
 
-    const yearAssignment = await prisma.yearAssignmentType.findUnique({
-      where: { year: selectedYear },
-    });
-
-    const assignmentType = yearAssignment?.assignmentType || "teacherApproval";
-
-    // Validate new team choices
-    if (chosedTeamsIds?.length > 0) {
-      const chosenTeams = await prisma.team.findMany({
+    if (assignmentType === "amiability" && chosedTeamsIds?.length > 0) {
+      const chosenTeams = await prisma.teamOffer.findMany({
         where: { id: { in: chosedTeamsIds } },
         select: { id: true, specialityId: true },
       });
 
-      const selectedSpecialityIds = new Set(specialities);
+      const selectedSpecialityIds =
+        specialities !== undefined
+          ? new Set(specialities)
+          : new Set(existingProject.specialities.map((s) => s.id));
+
       const allTeamsValid = chosenTeams.every((team) =>
         selectedSpecialityIds.has(team.specialityId)
       );
@@ -330,67 +357,40 @@ exports.updateProjectOffer = async (req, res) => {
       if (!allTeamsValid) {
         return res.status(400).json({
           status: "fail",
-          message:
-            "All selected teams must have a speciality that matches one of the project offer's specialities.",
+          message: "All selected teams must have a matching speciality.",
         });
+      }
+
+      if (
+        maxTeamsNumber !== undefined &&
+        chosedTeamsIds.length === maxTeamsNumber
+      ) {
+        updateData.status = "closed";
+      } else {
+        updateData.status = "open";
       }
     }
 
-    // Prepare update data
-    const updateData = {
-      title,
-      description,
-      tools,
-      languages,
-      maxTeamsNumber,
-      fileUrl,
-      year,
-      specialities: {
-        set: [],
-        connect: specialities.map((id) => ({ id })),
-      },
-      coSupervisors: {
-        set: [],
-        connect: coSupervisors?.map((id) => ({ id })),
-      },
-    };
-
-    if (
-      assignmentType === "amiability" &&
-      chosedTeamsIds?.length === maxTeamsNumber
-    ) {
-      updateData.status = "closed";
-    } else {
-      updateData.status = "open";
-    }
-
-    // Update the project offer
     const updatedProject = await prisma.projectOffer.update({
       where: { id },
       data: updateData,
       include: { specialities: true, coSupervisors: true, teacher: true },
     });
 
-    if (assignmentType === "amiability" && chosedTeamsIds?.length) {
-      // Unassign all current teams
-      await prisma.team.updateMany({
+    if (assignmentType === "amiability" && chosedTeamsIds?.length > 0) {
+      await prisma.teamOffer.updateMany({
         where: { projectOfferId: updatedProject.id },
         data: { projectOfferId: null },
       });
 
-      // Reassign new teams if any
-      if (chosedTeamsIds?.length > 0) {
-        await Promise.all(
-          chosedTeamsIds.map((teamId) =>
-            prisma.team.update({
-              where: { id: teamId },
-              data: {
-                assignedProject: { connect: { id: updatedProject.id } },
-              },
-            })
-          )
-        );
-      }
+      await Promise.all(
+        chosedTeamsIds.map((teamId) =>
+          prisma.teamOffer.update({
+            where: { id: teamId },
+            data: { assignedProject: { connect: { id: updatedProject.id } } },
+          })
+        )
+      );
     }
 
     res.status(200).json({
