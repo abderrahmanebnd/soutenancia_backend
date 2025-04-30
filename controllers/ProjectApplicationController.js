@@ -584,8 +584,7 @@ exports.cancelApplication = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "applciation canceled successfully",
-      data: updatedApplication,
+      message: "applciation canceled and removed successfully",
     });
   } catch (error) {
     console.error("Error canceling application:", error);

@@ -139,6 +139,32 @@ exports.updateTeamOffer = async (req, res) => {
       return res.status(404).json({ error: "Team offer not found" });
     }
 
+    if (existingTeamOffer.leader_id !== leader_id) {
+      return res
+        .status(403)
+        .json({ error: "You are not the leader of this team offer" });
+    }
+
+    // Vérifier si max_members est modifié
+    if (max_members !== undefined) {
+      const currentMembersCount = existingTeamOffer._count.TeamMembers;
+
+      //First Case
+      if (max_members < currentMembersCount) {
+        return res.status(400).json({
+          error: `Cannot reduce max members to ${max_members} as the team already has ${currentMembersCount} members`,
+        });
+      }
+
+      //Second case
+      if (
+        existingTeamOffer.status === "closed" &&
+        max_members > currentMembersCount
+      ) {
+        // Force le statut à "open" même si status n'était pas dans les champs à mettre à jour
+        status = "open";
+      }
+    }
     // only the leader can update the team offer
     if (existingTeamOffer.leader_id !== leader_id) {
       return res

@@ -1,20 +1,38 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const cloudinaryService = require("../services/cloudinary");
+const { cleanupFile } = require("../middlewares/multer");
 
 exports.createProjectOffer = async (req, res) => {
   try {
-    const {
+    let {
       title,
       description,
-      tools,
-      languages,
+      tools: toolsInput,
+      languages: languagesInput,
       maxTeamsNumber,
-      fileUrl,
       year,
-      specialities,
+      specialities: specialitiesInput,
       chosedTeamsIds,
-      coSupervisors,
+      coSupervisors: coSupervisorsInput,
     } = req.body;
+
+    // parsing json data
+    const tools =
+      typeof toolsInput === "string" ? JSON.parse(toolsInput) : toolsInput;
+    const languages =
+      typeof languagesInput === "string"
+        ? JSON.parse(languagesInput)
+        : languagesInput;
+    const specialities =
+      typeof specialitiesInput === "string"
+        ? JSON.parse(specialitiesInput)
+        : specialitiesInput;
+    const coSupervisors =
+      coSupervisorsInput &&
+      (typeof coSupervisorsInput === "string"
+        ? JSON.parse(coSupervisorsInput)
+        : coSupervisorsInput);
 
     const teacher = await prisma.teacher.findUnique({
       where: { userId: req.user.id },
@@ -26,12 +44,20 @@ exports.createProjectOffer = async (req, res) => {
         message: "Teacher not found for this user.",
       });
     }
-
     const specialitiesData = await prisma.speciality.findMany({
       where: {
         id: { in: specialities },
       },
     });
+
+    if (specialitiesData.length === 0) {
+      if (req.file) cleanupFile(req.file.path);
+      return res.status(400).json({
+        status: "fail",
+        message:
+          "Aucune spécialité trouvée avec les identifiants fournis. Veuillez vérifier les IDs de spécialité.",
+      });
+    }
 
     const years = [...new Set(specialitiesData.map((s) => s.year))];
 
@@ -74,6 +100,33 @@ exports.createProjectOffer = async (req, res) => {
       where: { year: selectedYear },
     });
 
+    if (!yearAssignment) {
+      return res.status(400).json({
+        status: "fail",
+        message: `No assignment type for year ${selectedYear}`,
+      });
+    }
+
+    let fileUrl = null;
+    let cloudinaryPublicId = null;
+
+    if (req.file) {
+      const uploadResult = await cloudinaryService.uploadFile(req.file.path, {
+        folder: `project_offers/${teacher.id}`,
+      });
+      if (uploadResult.success) {
+        fileUrl = uploadResult.url;
+        cloudinaryPublicId = uploadResult.publicId;
+
+        cleanupFile(req.file.path); // Clean up the local file after upload
+      } else {
+        cleanupFile(req.file.path);
+        return res.status(500).json({
+          status: "fail",
+          message: "Failed to upload file to cloud storage",
+        });
+      }
+    }
     const assignmentType = yearAssignment?.assignmentType || "teacherApproval";
 
     const data = {
@@ -81,7 +134,10 @@ exports.createProjectOffer = async (req, res) => {
       description,
       tools,
       languages,
-      maxTeamsNumber,
+      maxTeamsNumber: parseInt(maxTeamsNumber, 10),
+      fileUrl,
+      cloudinaryPublicId,
+      year: selectedYear,
       teacherId: teacher.id,
       assignmentType,
       specialities: {
@@ -91,9 +147,6 @@ exports.createProjectOffer = async (req, res) => {
         connect: coSupervisors?.map((id) => ({ id })),
       },
     };
-
-    if (fileUrl) data.fileUrl = fileUrl;
-    if (year) data.year = year;
 
     if (
       yearAssignment.assignmentType === "amiability" &&
@@ -127,7 +180,10 @@ exports.createProjectOffer = async (req, res) => {
       data: projectOffer,
     });
   } catch (err) {
-    console.error(err);
+    if (req.file) {
+      cleanupFile(req.file.path);
+    }
+    console.error("Project offer creation error", err);
     res.status(500).json({
       message: "Something went wrong creating the project offer.",
       error: err.message,
@@ -186,6 +242,7 @@ exports.getAllProjectOffers = async (req, res) => {
     }
     res.status(200).json({
       status: "success",
+      results: offers.length,
       data: offers,
     });
   } catch (err) {
@@ -219,7 +276,11 @@ exports.getMyProjectOffer = async (req, res) => {
       },
     });
 
-    res.status(200).json(offers);
+    res.status(200).json({
+      status: "success",
+      results: offers.length,
+      data: offers,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Could not fetch your project offers." });
@@ -251,7 +312,10 @@ exports.getProjectOffer = async (req, res) => {
     if (!offer)
       return res.status(404).json({ message: "Project offer not found" });
 
-    res.status(200).json(offer);
+    res.status(200).json({
+      status: "success",
+      data: offer,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching project offer." });
@@ -261,22 +325,53 @@ exports.getProjectOffer = async (req, res) => {
 exports.updateProjectOffer = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
+    let {
       title,
       description,
-      tools,
-      languages,
+      tools: toolsInput,
+      languages: languagesInput,
       maxTeamsNumber,
-      fileUrl,
-      year,
-      specialities,
-      chosedTeamsIds,
-      coSupervisors,
+      specialities: specialitiesInput,
+      chosedTeamsIds: chosedTeamsIdsInput,
+      coSupervisors: coSupervisorsInput,
     } = req.body;
 
+    const tools =
+      toolsInput && typeof toolsInput === "string"
+        ? JSON.parse(toolsInput)
+        : toolsInput;
+    const languages =
+      languagesInput && typeof languagesInput === "string"
+        ? JSON.parse(languagesInput)
+        : languagesInput;
+    const specialities =
+      specialitiesInput && typeof specialitiesInput === "string"
+        ? JSON.parse(specialitiesInput)
+        : specialitiesInput;
+    const coSupervisors =
+      coSupervisorsInput && typeof coSupervisorsInput === "string"
+        ? JSON.parse(coSupervisorsInput)
+        : coSupervisorsInput;
+    const chosedTeamsIds =
+      chosedTeamsIdsInput && typeof chosedTeamsIdsInput === "string"
+        ? JSON.parse(chosedTeamsIdsInput)
+        : chosedTeamsIdsInput;
+
+    // i need to fetch the teacher for the cloudinary file
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (!teacher) {
+      if (req.file) cleanupFile(req.file.path);
+      return res.status(404).json({
+        status: "fail",
+        message: "Teacher not found for this user.",
+      });
+    }
     const existingProject = await prisma.projectOffer.findUnique({
       where: { id },
-      include: { teacher: true, assignedTeams: true },
+      include: { teacher: true, assignedTeams: true, specialities: true },
     });
 
     if (!existingProject) {
@@ -293,7 +388,31 @@ exports.updateProjectOffer = async (req, res) => {
     }
 
     let assignmentType = existingProject.assignmentType;
+    let fileUrl = existingProject.fileUrl;
+    let cloudinaryPublicId = existingProject.cloudinaryPublicId;
 
+    if (req.file) {
+      // Supprimer l'ancien fichier si existant
+      if (cloudinaryPublicId) {
+        await cloudinaryService.deleteFile(cloudinaryPublicId);
+      }
+
+      const uploadResult = await cloudinaryService.uploadFile(req.file.path, {
+        folder: `project_offers/${teacher.id}`,
+      });
+
+      if (uploadResult.success) {
+        fileUrl = uploadResult.url;
+        cloudinaryPublicId = uploadResult.publicId;
+        cleanupFile(req.file.path);
+      } else {
+        cleanupFile(req.file.path);
+        return res.status(500).json({
+          status: "fail",
+          message: "Failed to upload file to cloud storage",
+        });
+      }
+    }
     const updateData = {};
 
     if (title !== undefined) updateData.title = title;
@@ -301,9 +420,11 @@ exports.updateProjectOffer = async (req, res) => {
     if (tools !== undefined) updateData.tools = tools;
     if (languages !== undefined) updateData.languages = languages;
     if (maxTeamsNumber !== undefined)
-      updateData.maxTeamsNumber = maxTeamsNumber;
-    if (fileUrl !== undefined) updateData.fileUrl = fileUrl;
-    if (year !== undefined) updateData.year = year;
+      updateData.maxTeamsNumber = parseInt(maxTeamsNumber, 10);
+    if (fileUrl !== existingProject.fileUrl) {
+      updateData.fileUrl = fileUrl;
+      updateData.cloudinaryPublicId = cloudinaryPublicId;
+    }
 
     if (specialities !== undefined) {
       const specialitiesData = await prisma.speciality.findMany({
@@ -313,6 +434,7 @@ exports.updateProjectOffer = async (req, res) => {
       const years = [...new Set(specialitiesData.map((s) => s.year))];
 
       if (years.length > 1) {
+        if (req.file) cleanupFile(req.file.path);
         return res.status(400).json({
           status: "fail",
           message: "All selected specialities must belong to the same year.",
@@ -398,6 +520,9 @@ exports.updateProjectOffer = async (req, res) => {
       data: updatedProject,
     });
   } catch (err) {
+    if (req.file) {
+      cleanupFile(req.file.path);
+    }
     console.error(err);
     res.status(500).json({
       message: "Could not update project offer.",
@@ -409,6 +534,32 @@ exports.updateProjectOffer = async (req, res) => {
 exports.deleteProjectOffer = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const projectOffer = await prisma.projectOffer.findUnique({
+      where: { id },
+      select: { cloudinaryPublicId: true, teacherId: true },
+    });
+    if (!projectOffer) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Project offer not found",
+      });
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    if (req.user.role !== "admin" && projectOffer.teacherId !== teacher?.id) {
+      return res.status(403).json({
+        status: "fail",
+        message: "You don't have permission to delete this offer",
+      });
+    }
+
+    if (projectOffer?.cloudinaryPublicId) {
+      await cloudinaryService.deleteFile(projectOffer.cloudinaryPublicId);
+    }
 
     await prisma.projectOffer.delete({ where: { id } });
 
