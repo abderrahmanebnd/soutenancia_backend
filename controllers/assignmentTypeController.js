@@ -1,8 +1,12 @@
-// Get all
+const prisma = require("../prisma/prismaClient");
+
 exports.getYearAssignmentTypes = async (req, res) => {
   try {
     const types = await prisma.yearAssignmentType.findMany();
-    res.status(200).json(types);
+    res.status(200).json({
+      message: "success",
+      data: types,
+    });
   } catch (err) {
     res.status(500).json({
       message: "Error fetching year assignment types",
@@ -15,6 +19,22 @@ exports.getYearAssignmentTypes = async (req, res) => {
 exports.createYearAssignmentType = async (req, res) => {
   try {
     const { year, assignmentType } = req.body;
+
+    if (!year || !assignmentType) {
+      return res.status(400).json({
+        message: "Year and assignment type are required",
+      });
+    }
+
+    if (
+      (year && ![1, 2, 3, 4, 5].includes(year)) ||
+      !["auto", "teacherApproval", "amiability"].includes(assignmentType)
+    ) {
+      return res.status(400).json({
+        message:
+          "Year must be between 1 and 5 and assignment type must be one of 'auto', 'teacherApproval', or 'amiability'",
+      });
+    }
 
     const existing = await prisma.yearAssignmentType.findUnique({
       where: { year },
@@ -51,6 +71,18 @@ exports.updateYearAssignmentType = async (req, res) => {
       return res.status(404).json({ message: "YearAssignmentType not found" });
     }
 
+    if (!assignmentType) {
+      return res.status(400).json({
+        message: "Assignment type are required",
+      });
+    }
+
+    if (!["auto", "teacherApproval", "amiability"].includes(assignmentType)) {
+      return res.status(400).json({
+        message:
+          "Assignment type must be one of 'auto', 'teacherApproval', or 'amiability'",
+      });
+    }
     const updatedYearAssignment = await prisma.yearAssignmentType.update({
       where: { id },
       data: { assignmentType },
@@ -78,8 +110,7 @@ exports.updateYearAssignmentType = async (req, res) => {
     });
 
     res.status(200).json({
-      message:
-        "YearAssignmentType and related ProjectOffers updated successfully",
+      message: "success",
       data: updatedYearAssignment,
     });
   } catch (error) {
@@ -93,6 +124,12 @@ exports.deleteYearAssignmentType = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const yearAssignmentType = await prisma.yearAssignmentType.findUnique({
+      where: { id },
+    });
+    if (!yearAssignmentType) {
+      return res.status(404).json({ message: "YearAssignmentType not found" });
+    }
     await prisma.yearAssignmentType.delete({
       where: { id },
     });

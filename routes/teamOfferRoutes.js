@@ -23,7 +23,7 @@ router
   )
   .get(teamOfferController.getAllTeamOffers);
 
-router.route("/completeTeams").get(teamOfferController.getAllCompletedTeams);
+router.route("/closedTeams").get(teamOfferController.getAllCompletedTeams);
 
 router
   .route("/myTeamOffer")

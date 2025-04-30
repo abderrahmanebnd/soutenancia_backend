@@ -17,7 +17,6 @@ exports.createTeamOffer = async (req, res) => {
   } = req.body;
 
   const leader_id = req.user.Student.id;
-  console.log("leader_id", leader_id);
   try {
     const existingTeamOffer = await prisma.teamOffer.findUnique({
       where: { leader_id },
@@ -96,7 +95,7 @@ exports.createTeamOffer = async (req, res) => {
 
     await prisma.student.update({
       where: { id: leader_id },
-      data: { isLeader: true },
+      data: { isLeader: true, isInTeam: true },
     });
 
     res.status(201).json(teamOffer);
@@ -173,6 +172,26 @@ exports.updateTeamOffer = async (req, res) => {
         .json({ error: "You are not the leader of this team offer" });
     }
 
+    if (max_members !== undefined) {
+      const currentMembersCount = existingTeamOffer._count.TeamMembers;
+
+      //First Case
+      if (max_members < currentMembersCount) {
+        return res.status(400).json({
+          error: `Cannot reduce max members to ${max_members} as the team already has ${currentMembersCount} members`,
+        });
+      }
+
+      //Second Case
+      if (
+        existingTeamOffer.status === "closed" &&
+        max_members > currentMembersCount
+      ) {
+        // Force le statut à "open" même si status n'était pas dans les champs à mettre à jour
+        status = "open";
+      }
+    }
+
     const updateData = {};
 
     // Add fields if provided
@@ -220,7 +239,7 @@ exports.updateTeamOffer = async (req, res) => {
     if (new_leader_id !== undefined && new_leader_id !== leader_id) {
       await prisma.student.update({
         where: { id: leader_id },
-        data: { isLeader: false },
+        data: { isLeader: false, isInTeam: false },
       });
     }
 
@@ -528,7 +547,7 @@ exports.deleteTeamMember = async (req, res) => {
 exports.getAllCompletedTeams = async (req, res) => {
   try {
     const completedTeams = await prisma.teamOffer.findMany({
-      where: { status: "closed" },
+      where: { status: "closed", assignedProjectId: null },
       include: {
         leader: {
           include: {
@@ -546,7 +565,11 @@ exports.getAllCompletedTeams = async (req, res) => {
         },
       },
     });
-    res.status(200).json(completedTeams);
+    res.status(200).json({
+      status: "success",
+      results: completedTeams.length,
+      data: completedTeams,
+    });
   } catch (error) {
     console.error("Error getting completed teams:", error);
     res.status(500).json({ error: "Internal Server Error" });

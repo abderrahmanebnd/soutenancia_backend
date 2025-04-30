@@ -11,7 +11,9 @@ exports.createProjectOffer = async (req, res) => {
       tools: toolsInput,
       languages: languagesInput,
       maxTeamsNumber,
+      year,
       specialities: specialitiesInput,
+      chosedTeamsIds,
       coSupervisors: coSupervisorsInput,
     } = req.body;
 
@@ -42,7 +44,6 @@ exports.createProjectOffer = async (req, res) => {
         message: "Teacher not found for this user.",
       });
     }
-
     const specialitiesData = await prisma.speciality.findMany({
       where: {
         id: { in: specialities },
@@ -59,6 +60,7 @@ exports.createProjectOffer = async (req, res) => {
     }
 
     const years = [...new Set(specialitiesData.map((s) => s.year))];
+
     if (years.length > 1) {
       return res.status(400).json({
         status: "fail",
@@ -67,6 +69,32 @@ exports.createProjectOffer = async (req, res) => {
     }
 
     const selectedYear = years[0];
+
+    if (chosedTeamsIds?.length > 0) {
+      const chosenTeams = await prisma.teamOffer.findMany({
+        where: {
+          id: { in: chosedTeamsIds },
+        },
+        select: {
+          id: true,
+          specialityId: true,
+        },
+      });
+
+      const selectedSpecialityIds = new Set(specialities);
+
+      const allTeamsValid = chosenTeams.every((team) =>
+        selectedSpecialityIds.has(team.specialityId)
+      );
+
+      if (!allTeamsValid) {
+        return res.status(400).json({
+          status: "fail",
+          message:
+            "All selected teams must have a speciality that matches one of the project offer's specialities.",
+        });
+      }
+    }
 
     const yearAssignment = await prisma.yearAssignmentType.findUnique({
       where: { year: selectedYear },
@@ -99,6 +127,7 @@ exports.createProjectOffer = async (req, res) => {
         });
       }
     }
+    const assignmentType = yearAssignment?.assignmentType || "teacherApproval";
 
     const data = {
       title,
@@ -110,7 +139,7 @@ exports.createProjectOffer = async (req, res) => {
       cloudinaryPublicId,
       year: selectedYear,
       teacherId: teacher.id,
-      assignmentType: yearAssignment.assignmentType,
+      assignmentType,
       specialities: {
         connect: specialities.map((id) => ({ id })),
       },
@@ -119,10 +148,32 @@ exports.createProjectOffer = async (req, res) => {
       },
     };
 
+    if (
+      yearAssignment.assignmentType === "amiability" &&
+      chosedTeamsIds?.length === maxTeamsNumber
+    ) {
+      data.status = "closed";
+    }
     const projectOffer = await prisma.projectOffer.create({
       data,
       include: { specialities: true, coSupervisors: true },
     });
+
+    if (
+      yearAssignment.assignmentType === "amiability" &&
+      chosedTeamsIds?.length
+    ) {
+      await Promise.all(
+        chosedTeamsIds.map((teamId) =>
+          prisma.teamOffer.update({
+            where: { id: teamId },
+            data: {
+              assignedProject: { connect: { id: projectOffer.id } },
+            },
+          })
+        )
+      );
+    }
 
     res.status(201).json({
       status: "success",
@@ -142,38 +193,61 @@ exports.createProjectOffer = async (req, res) => {
 
 exports.getAllProjectOffers = async (req, res) => {
   try {
-    // TODO: return just the offers for the current user depending on his speciality
-    // TODO: use the speciality table in the student also and so on
-    const offers = await prisma.projectOffer.findMany({
-      where: {
-        status: "open",
-        year: {
-          gte: new Date().getFullYear(), // Only show offers for the current year and future years
-        },
-      },
-      include: {
-        teacher: true,
-        specialities: true,
-        applications: true,
-        _count: {
-          select: {
-            assignedTeams: true,
+    let offers = [];
+    if (req.user.role === "student") {
+      const studentSpecialityId = req.user.Student.specialityId;
+
+      offers = await prisma.projectOffer.findMany({
+        where: {
+          status: "open",
+          year: {
+            gte: new Date().getFullYear(),
+          },
+          specialities: {
+            some: {
+              id: studentSpecialityId,
+            },
           },
         },
-      },
-    });
-
+        include: {
+          teacher: true,
+          specialities: true,
+          applications: true,
+          _count: {
+            select: {
+              assignedTeams: true,
+            },
+          },
+        },
+      });
+    } else {
+      offers = await prisma.projectOffer.findMany({
+        where: {
+          status: "open",
+          year: {
+            gte: new Date().getFullYear(),
+          },
+        },
+        include: {
+          teacher: true,
+          specialities: true,
+          applications: true,
+          _count: {
+            select: {
+              assignedTeams: true,
+            },
+          },
+        },
+      });
+    }
     res.status(200).json({
       status: "success",
       results: offers.length,
       data: offers,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      status: "fail",
-      message: "Error fetching project offers.",
-    });
+    console.error("Error fetching project offers:", err);
+    res.status(500).json({ message: "Error fetching project offers." });
   }
 };
 
@@ -251,44 +325,85 @@ exports.getProjectOffer = async (req, res) => {
 exports.updateProjectOffer = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = { ...req.body };
+    let {
+      title,
+      description,
+      tools: toolsInput,
+      languages: languagesInput,
+      maxTeamsNumber,
+      specialities: specialitiesInput,
+      chosedTeamsIds: chosedTeamsIdsInput,
+      coSupervisors: coSupervisorsInput,
+    } = req.body;
 
-    const existingOffer = await prisma.projectOffer.findUnique({
-      where: { id },
-      select: { cloudinaryPublicId: true, teacherId: true },
-    });
-    if (!existingOffer) {
-      if (req.file) cleanupFile(req.file.path);
-      return res.status(404).json({
-        status: "fail",
-        message: "Project offer not found",
-      });
-    }
+    const tools =
+      toolsInput && typeof toolsInput === "string"
+        ? JSON.parse(toolsInput)
+        : toolsInput;
+    const languages =
+      languagesInput && typeof languagesInput === "string"
+        ? JSON.parse(languagesInput)
+        : languagesInput;
+    const specialities =
+      specialitiesInput && typeof specialitiesInput === "string"
+        ? JSON.parse(specialitiesInput)
+        : specialitiesInput;
+    const coSupervisors =
+      coSupervisorsInput && typeof coSupervisorsInput === "string"
+        ? JSON.parse(coSupervisorsInput)
+        : coSupervisorsInput;
+    const chosedTeamsIds =
+      chosedTeamsIdsInput && typeof chosedTeamsIdsInput === "string"
+        ? JSON.parse(chosedTeamsIdsInput)
+        : chosedTeamsIdsInput;
+
+    // i need to fetch the teacher for the cloudinary file
     const teacher = await prisma.teacher.findUnique({
       where: { userId: req.user.id },
     });
 
-    if (req.user.role !== "admin" && existingOffer.teacherId !== teacher?.id) {
+    if (!teacher) {
       if (req.file) cleanupFile(req.file.path);
-      return res.status(403).json({
+      return res.status(404).json({
         status: "fail",
-        message: "You don't have permission to update this offer",
+        message: "Teacher not found for this user.",
+      });
+    }
+    const existingProject = await prisma.projectOffer.findUnique({
+      where: { id },
+      include: { teacher: true, assignedTeams: true, specialities: true },
+    });
+
+    if (!existingProject) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Project offer not found.",
       });
     }
 
+    if (req.body.assignmentType) {
+      return res.status(400).json({
+        message: "Assignment type cannot be updated.",
+      });
+    }
+
+    let assignmentType = existingProject.assignmentType;
+    let fileUrl = existingProject.fileUrl;
+    let cloudinaryPublicId = existingProject.cloudinaryPublicId;
+
     if (req.file) {
-      //delete the previos file if a new is upladed
-      if (existingOffer?.cloudinaryPublicId) {
-        await cloudinaryService.deleteFile(existingOffer.cloudinaryPublicId);
+      // Supprimer l'ancien fichier si existant
+      if (cloudinaryPublicId) {
+        await cloudinaryService.deleteFile(cloudinaryPublicId);
       }
 
       const uploadResult = await cloudinaryService.uploadFile(req.file.path, {
-        folder: `project_offers/${req.user.Teacher?.id || "unknown"}`,
+        folder: `project_offers/${teacher.id}`,
       });
 
       if (uploadResult.success) {
-        data.fileUrl = uploadResult.url;
-        data.cloudinaryPublicId = uploadResult.publicId;
+        fileUrl = uploadResult.url;
+        cloudinaryPublicId = uploadResult.publicId;
         cleanupFile(req.file.path);
       } else {
         cleanupFile(req.file.path);
@@ -298,51 +413,121 @@ exports.updateProjectOffer = async (req, res) => {
         });
       }
     }
-    if (data.tools && typeof data.tools === "string") {
-      data.tools = JSON.parse(data.tools);
+    const updateData = {};
+
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (tools !== undefined) updateData.tools = tools;
+    if (languages !== undefined) updateData.languages = languages;
+    if (maxTeamsNumber !== undefined)
+      updateData.maxTeamsNumber = parseInt(maxTeamsNumber, 10);
+    if (fileUrl !== existingProject.fileUrl) {
+      updateData.fileUrl = fileUrl;
+      updateData.cloudinaryPublicId = cloudinaryPublicId;
     }
 
-    if (data.languages && typeof data.languages === "string") {
-      data.languages = JSON.parse(data.languages);
-    }
-
-    if (data.specialities) {
-      data.specialities = {
-        set: [],
-        connect: data.specialities.map((id) => ({ id })),
-      };
-    }
-
-    if (data.coSupervisors) {
-      data.coSupervisors = {
-        set: [],
-        connect: data.coSupervisors.map((id) => ({ id })),
-      };
-    }
-
-    if (data.assignmentType) {
-      data.assignmentType = undefined;
-      res.status(400).json({
-        message: "Assignment type cannot be updated.",
+    if (specialities !== undefined) {
+      const specialitiesData = await prisma.speciality.findMany({
+        where: { id: { in: specialities } },
       });
-      return;
+
+      const years = [...new Set(specialitiesData.map((s) => s.year))];
+
+      if (years.length > 1) {
+        if (req.file) cleanupFile(req.file.path);
+        return res.status(400).json({
+          status: "fail",
+          message: "All selected specialities must belong to the same year.",
+        });
+      }
+
+      updateData.specialities = {
+        set: [],
+        connect: specialities.map((id) => ({ id })),
+      };
+
+      const selectedYear = years[0];
+      const yearAssignment = await prisma.yearAssignmentType.findUnique({
+        where: { year: selectedYear },
+      });
+
+      assignmentType = yearAssignment?.assignmentType || "teacherApproval";
     }
-    const updated = await prisma.projectOffer.update({
+
+    if (coSupervisors !== undefined) {
+      updateData.coSupervisors = {
+        set: [],
+        connect: coSupervisors.map((id) => ({ id })),
+      };
+    }
+
+    if (assignmentType === "amiability" && chosedTeamsIds?.length > 0) {
+      const chosenTeams = await prisma.teamOffer.findMany({
+        where: { id: { in: chosedTeamsIds } },
+        select: { id: true, specialityId: true },
+      });
+
+      const selectedSpecialityIds =
+        specialities !== undefined
+          ? new Set(specialities)
+          : new Set(existingProject.specialities.map((s) => s.id));
+
+      const allTeamsValid = chosenTeams.every((team) =>
+        selectedSpecialityIds.has(team.specialityId)
+      );
+
+      if (!allTeamsValid) {
+        return res.status(400).json({
+          status: "fail",
+          message: "All selected teams must have a matching speciality.",
+        });
+      }
+
+      if (
+        maxTeamsNumber !== undefined &&
+        chosedTeamsIds.length === maxTeamsNumber
+      ) {
+        updateData.status = "closed";
+      } else {
+        updateData.status = "open";
+      }
+    }
+
+    const updatedProject = await prisma.projectOffer.update({
       where: { id },
-      data,
+      data: updateData,
       include: { specialities: true, coSupervisors: true, teacher: true },
     });
 
+    if (assignmentType === "amiability" && chosedTeamsIds?.length > 0) {
+      await prisma.teamOffer.updateMany({
+        where: { projectOfferId: updatedProject.id },
+        data: { projectOfferId: null },
+      });
+
+      await Promise.all(
+        chosedTeamsIds.map((teamId) =>
+          prisma.teamOffer.update({
+            where: { id: teamId },
+            data: { assignedProject: { connect: { id: updatedProject.id } } },
+          })
+        )
+      );
+    }
+
     res.status(200).json({
       status: "success",
-      data: updated,
+      data: updatedProject,
     });
   } catch (err) {
     if (req.file) {
       cleanupFile(req.file.path);
     }
     console.error(err);
-    res.status(500).json({ message: "Could not update project offer." });
+    res.status(500).json({
+      message: "Could not update project offer.",
+      error: err.message,
+    });
   }
 };
 

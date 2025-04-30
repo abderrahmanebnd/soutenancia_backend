@@ -4,34 +4,45 @@ const { uploadSingle, handleMulterError } = require("../middlewares/multer");
 const projectOfferController = require("../controllers/projectOfferController");
 const authController = require("../controllers/authController");
 
-router.use(
-  authController.protect,
-  authController.restrictTo("teacher", "admin")
-);
+router.use(authController.protect);
+
+router.route("/").get(projectOfferController.getAllProjectOffers);
 
 router
   .route("/")
   .post(
+    authController.restrictTo("teacher", "admin"),
     uploadSingle,
     cleanupOnError,
     handleMulterError,
     projectOfferController.createProjectOffer
   )
-  .get(projectOfferController.getAllProjectOffers);
+  .get(authController.restrictTo("teacher", "admin"),projectOfferController.getAllProjectOffers);
 
-router.route("/myProjectOffer").get(projectOfferController.getMyProjectOffer);
+router
+  .route("/myProjectOffer")
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getMyProjectOffer
+  );
 
-router.route("/history").get(projectOfferController.getProjectOfferHistory);
+router
+  .route("/history")
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getProjectOfferHistory
+  );
 
 router
   .route("/:id")
   .patch(
+    authController.restrictTo("teacher", "admin"),
     uploadSingle,
     cleanupOnError,
     handleMulterError,
     projectOfferController.updateProjectOffer
   )
-  .get(projectOfferController.getProjectOffer)
-  .delete(projectOfferController.deleteProjectOffer);
+  .get(authController.restrictTo("teacher", "admin"),projectOfferController.getProjectOffer)
+  .delete(authController.restrictTo("teacher", "admin"),projectOfferController.deleteProjectOffer);
 
 module.exports = router;
