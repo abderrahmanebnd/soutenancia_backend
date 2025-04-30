@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { uploadSingle, handleMulterError } = require("../middlewares/multer");
+const {
+  uploadSingle,
+  handleMulterError,
+  cleanupOnError,
+} = require("../middlewares/multer");
 const projectOfferController = require("../controllers/projectOfferController");
 const authController = require("../controllers/authController");
 
@@ -17,7 +21,10 @@ router
     handleMulterError,
     projectOfferController.createProjectOffer
   )
-  .get(authController.restrictTo("teacher", "admin"),projectOfferController.getAllProjectOffers);
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getAllProjectOffers
+  );
 
 router
   .route("/myProjectOffer")
@@ -42,7 +49,13 @@ router
     handleMulterError,
     projectOfferController.updateProjectOffer
   )
-  .get(authController.restrictTo("teacher", "admin"),projectOfferController.getProjectOffer)
-  .delete(authController.restrictTo("teacher", "admin"),projectOfferController.deleteProjectOffer);
+  .get(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.getProjectOffer
+  )
+  .delete(
+    authController.restrictTo("teacher", "admin"),
+    projectOfferController.deleteProjectOffer
+  );
 
 module.exports = router;
