@@ -164,6 +164,7 @@ model ProjectOffer {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   assignedTeams TeamOffer[]
+  Sprint        Sprint[]
 }
 
 model ProjectApplication {
@@ -202,7 +203,10 @@ model Sprint {
   status      SprintStatus @default(planned)
 
   teamOfferId String
-  teamOffer   TeamOffer @relation(fields: [teamOfferId], references: [id], onDelete: Cascade)
+  team        TeamOffer @relation(fields: [teamOfferId], references: [id], onDelete: Cascade)
+
+  projectOfferId String
+  project        ProjectOffer @relation(fields: [projectOfferId], references: [id], onDelete: Cascade)
 
   notes        Note[]
   deliverables Deliverable[]
