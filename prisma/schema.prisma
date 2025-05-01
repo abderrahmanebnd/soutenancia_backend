@@ -21,6 +21,7 @@ model User {
   resetOtpExpiry DateTime?
   Student        Student?
   Teacher        Teacher?
+  Note           Note[]
 }
 
 model Student {
@@ -40,6 +41,7 @@ model Student {
   TeamOffer       TeamOffer[]
   TeamApplication TeamApplication[]
   TeamMember      TeamMember[]
+  Deliverable     Deliverable[]
 }
 
 model Skill {
@@ -82,6 +84,7 @@ model TeamOffer {
 
   assignedProjectId String?
   assignedProject   ProjectOffer? @relation(fields: [assignedProjectId], references: [id])
+  Sprint            Sprint[]
 }
 
 model TeamApplication {
@@ -138,18 +141,18 @@ model Teacher {
 }
 
 model ProjectOffer {
-  id             String          @id @default(cuid())
-  title          String          @db.VarChar(150)
-  description    String          @db.VarChar(1000)
-  tools          String[]
-  languages      String[]
-  status         TeamOfferStatus @default(open)
-  maxTeamsNumber Int             @default(1)
-  year           Int?
-  fileUrl           String?    @db.VarChar(255)
-  cloudinaryPublicId String?    @db.VarChar(255)
-  teacherId      String
-  teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  id                 String          @id @default(cuid())
+  title              String          @db.VarChar(150)
+  description        String          @db.VarChar(1000)
+  tools              String[]
+  languages          String[]
+  status             TeamOfferStatus @default(open)
+  maxTeamsNumber     Int             @default(1)
+  year               Int?
+  fileUrl            String?         @db.VarChar(255)
+  cloudinaryPublicId String?         @db.VarChar(255)
+  teacherId          String
+  teacher            Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   coSupervisors Teacher[] @relation("ProjectCoSupervisors")
 
@@ -190,6 +193,52 @@ model ProjectSelectionWindow {
   updatedAt    DateTime   @updatedAt
 }
 
+model Sprint {
+  id          String       @id @default(cuid())
+  title       String       @db.VarChar(100)
+  description String?      @db.VarChar(1000)
+  startDate   DateTime
+  endDate     DateTime
+  status      SprintStatus @default(planned)
+
+  teamOfferId String
+  teamOffer   TeamOffer @relation(fields: [teamOfferId], references: [id], onDelete: Cascade)
+
+  notes        Note[]
+  deliverables Deliverable[]
+}
+
+model Deliverable {
+  id                 String  @id @default(cuid())
+  title              String  @db.VarChar(100)
+  description        String? @db.VarChar(1000)
+  fileUrl            String? @db.VarChar(255)
+  cloudinaryPublicId String? @db.VarChar(255)
+
+  sprintId String
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id      String @id @default(cuid())
+  content String @db.VarChar(1000)
+
+  sprintId String
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sprintId])
+  @@index([senderId])
+}
+
 model YearAssignmentType {
   id             String         @id @default(cuid())
   year           Int            @unique
@@ -210,6 +259,12 @@ model Speciality {
   ProjectSelectionWindow ProjectSelectionWindow[]
 
   @@unique([name, year])
+}
+
+enum SprintStatus {
+  planned
+  active
+  completed
 }
 
 enum AssignmentType {
