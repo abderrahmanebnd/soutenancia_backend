@@ -83,3 +83,31 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     data: updatedStudent,
   });
 });
+
+//getting student
+exports.getAllStudents = genericController.createListHandler("student", {
+  include: {
+    user: true,
+    speciality: true,
+    skills: {
+      include: {
+        skill: true,
+      },
+    },
+    TeamMember: true,
+  },
+  defaultSort: { user: { firstName: "asc" } },
+});
+
+exports.getStudent = genericController.createGetOneHandler("student", {
+  include: {
+    user: true,
+    speciality: true,
+    skills: {
+      include: {
+        skill: true,
+      },
+    },
+    TeamMember: true,
+  },
+});

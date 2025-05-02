@@ -1,23 +1,17 @@
 const prisma = require("../prisma/prismaClient");
+const genericController = require("./genericController");
 
-exports.getAllTeachers = async (req, res) => {
-  try {
-    const teachers = await prisma.teacher.findMany({
-      include: {
-        user: true,
-      },
-    });
+exports.getAllTeachers = genericController.createListHandler("teacher", {
+  include: {
+    user: true,
+    projectOffers: true  //optional you can remove it
+  },
+  defaultSort: { user: { firstName: "asc" } } //tri par default
+});
 
-    res.status(200).json({
-      status: "success",
-      data: {
-        teachers,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "fail",
-      message: error.message,
-    });
+exports.getTeacher = genericController.createGetOneHandler("teacher", {
+  include: {
+    user: true,
+    projectOffers: true
   }
-};
+});
