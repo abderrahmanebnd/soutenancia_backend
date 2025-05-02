@@ -9,19 +9,20 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  firstName      String    @db.VarChar(40)
-  lastName       String?   @db.VarChar(40)
+  id             String        @id @default(cuid())
+  firstName      String        @db.VarChar(40)
+  lastName       String?       @db.VarChar(40)
   password       String
-  email          String    @unique @db.VarChar(100)
-  role           Role      @default(student)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  email          String        @unique @db.VarChar(100)
+  role           Role          @default(student)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   resetOtpHash   String?
   resetOtpExpiry DateTime?
   Student        Student?
   Teacher        Teacher?
   Note           Note[]
+  Deliverable    Deliverable[]
 }
 
 model Student {
@@ -41,7 +42,6 @@ model Student {
   TeamOffer       TeamOffer[]
   TeamApplication TeamApplication[]
   TeamMember      TeamMember[]
-  Deliverable     Deliverable[]
 }
 
 model Skill {
@@ -214,16 +214,16 @@ model Sprint {
 
 model Deliverable {
   id                 String  @id @default(cuid())
-  title              String  @db.VarChar(100)
+  title              String? @db.VarChar(100)
   description        String? @db.VarChar(1000)
-  fileUrl            String? @db.VarChar(255)
-  cloudinaryPublicId String? @db.VarChar(255)
+  fileUrl            String  @db.VarChar(255)
+  cloudinaryPublicId String  @db.VarChar(255)
 
   sprintId String
   sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
 
-  studentId String
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  senderId String // teacher or student id
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 model Note {

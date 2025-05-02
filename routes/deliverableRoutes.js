@@ -5,22 +5,25 @@ const router = express.Router({ mergeParams: true });
 
 const deliverableController = require("../controllers/deliverableController");
 const authController = require("../controllers/authController");
+const {
+  uploadSingle,
+  cleanupOnError,
+  handleMulterError,
+} = require("../middlewares/multer");
 const { protect, restrictTo } = authController;
 
-router.use(protect);
+router.use(protect, restrictTo("teacher", "student"));
 
 router
   .route("/")
   .post(
-    restrictTo("teacher", "student"),
-    deliverableController.createDeliverable
-  );
+    uploadSingle,
+    cleanupOnError,
+    handleMulterError,
+    deliverableController.addDeliverable
+  )
+  .get(deliverableController.getDeliverables);
 
-router
-  .route("/:deliverableId")
-  .delete(
-    restrictTo("teacher", "student"),
-    deliverableController.deleteDeliverable
-  );
+router.route("/:deliverableId").delete(deliverableController.deleteDeliverable);
 
 module.exports = router;
