@@ -224,6 +224,9 @@ model Deliverable {
 
   senderId String // teacher or student id
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Note {
