@@ -22,10 +22,6 @@ router
     handleMulterError,
     projectOfferController.createProjectOffer
   );
-  // .get(
-  //   authController.restrictTo("teacher", "admin"),
-  //   projectOfferController.getAllProjectOffers
-  // );
 
 router
   .route("/myProjectOffer")
