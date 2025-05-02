@@ -9,10 +9,9 @@ const { protect, restrictTo } = authController;
 router.use(protect);
 router.use(restrictTo("student", "teacher", "admin"));
 
-router
-  .route("/")
-  .post(sprintController.createSprint)
-  .get(sprintController.getSprintsByProject);
+router.route("/").post(sprintController.createSprint);
+
+router.route("").get(sprintController.getSprintsByProject); // here we should add query params to filter by teamId and if the student is not a team member or not the teacher of the prject , we should return an error 403
 
 router
   .route("/:sprintId")

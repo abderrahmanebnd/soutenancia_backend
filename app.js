@@ -57,13 +57,10 @@ app.use(
   require("./routes/sprintRoutes")
 );
 
-app.use(
-  "/api/v1/projects/:projectId/sprints/:sprintId/notes",
-  require("./routes/noteRoutes")
-);
+app.use("/api/v1/sprints/:sprintId/notes", require("./routes/noteRoutes"));
 
 app.use(
-  "/api/v1/projects/:projectId/sprints/:sprintId/deliverables",
+  "/api/v1/sprints/:sprintId/deliverables",
   require("./routes/deliverableRoutes")
 );
 
