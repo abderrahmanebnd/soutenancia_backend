@@ -115,13 +115,36 @@ exports.createUser = async (req, res) => {
     });
 
     if (newUser.role === "student") {
-      const { year, specialityId } = req.body;
+      const { enrollmentNumber, specialityId } = req.body;
 
+      if (enrollmentNumber) {
+        const existingStudent = await prisma.student.findUnique({
+          where: { enrollmentNumber },
+        });
+        if (existingStudent) {
+          return res.status(400).json({
+            status: "fail",
+            message: "this enrollment number is already in use",
+          });
+        }
+      }
+      if (specialityId) {
+        const specialityExists = await prisma.speciality.findUnique({
+          where: { id: specialityId },
+        });
+        if (!specialityExists) {
+          return res.status(400).json({
+            status: "fail",
+            message: "this speciality does not exist",
+          });
+        }
+      }
       await prisma.student.create({
         data: {
           userId: newUser.id,
-          year: year || null,
+          enrollmentNumber: enrollmentNumber || null,
           specialityId: specialityId || null,
+          customSkills: [],
         },
       });
     }
@@ -131,6 +154,8 @@ exports.createUser = async (req, res) => {
         data: {
           userId: newUser.id,
           department: req.body.department || null,
+          title: req.body.title || null,
+          bio: req.body.bio || null,
         },
       });
     }
