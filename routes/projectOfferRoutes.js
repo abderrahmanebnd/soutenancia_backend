@@ -20,10 +20,6 @@ router
     cleanupOnError,
     handleMulterError,
     projectOfferController.createProjectOffer
-  )
-  .get(
-    authController.restrictTo("teacher", "admin"),
-    projectOfferController.getAllProjectOffers
   );
 
 router
