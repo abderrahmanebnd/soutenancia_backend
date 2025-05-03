@@ -1,5 +1,6 @@
 const catchAsync = require("../utils/catchAsync.js");
 const prisma = require("../prisma/prismaClient.js");
+const genericController = require("./genericController");
 
 exports.getAllSkills = catchAsync(async (req, res, next) => {
   const skills = await prisma.skill.findMany({
