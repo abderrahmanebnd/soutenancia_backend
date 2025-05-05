@@ -5,20 +5,23 @@ const checkProjectExists = async (projectId) => {
   const project = await prisma.projectOffer.findUnique({
     where: { id: projectId },
   });
-  if (!project) throw AppError("Project not found", 404);
+  if (!project)
+    res.status(404).json({ status: "fail", message: "Project not found" });
   return project;
 };
 
 // Reusable: Check if sprint exists
 const checkSprintExists = async (sprintId) => {
   const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
-  if (!sprint) throw AppError("Sprint not found", 404);
+  if (!sprint)
+    res.status(404).json({ status: "fail", message: "Sprint not found" });
   return sprint;
 };
 
 const checkTeamExists = async (teamId) => {
   const team = await prisma.teamOffer.findUnique({ where: { id: teamId } });
-  if (!team) throw AppError("Team not found", 404);
+  if (!team)
+    res.status(404).json({ status: "fail", message: "Team not found" });
   return team;
 };
 
