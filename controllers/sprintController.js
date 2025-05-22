@@ -1,27 +1,31 @@
 const prisma = require("../prisma/prismaClient");
 
 // Reusable: Check if project exists
-const checkProjectExists = async (projectId) => {
+const checkProjectExists = async (req, res, projectId) => {
   const project = await prisma.projectOffer.findUnique({
     where: { id: projectId },
   });
   if (!project)
-    res.status(404).json({ status: "fail", message: "Project not found" });
+    return res
+      .status(404)
+      .json({ status: "fail", message: "Project not found" });
   return project;
 };
 
 // Reusable: Check if sprint exists
-const checkSprintExists = async (sprintId) => {
+const checkSprintExists = async (req, res, sprintId) => {
   const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
   if (!sprint)
-    res.status(404).json({ status: "fail", message: "Sprint not found" });
+    return res
+      .status(404)
+      .json({ status: "fail", message: "Sprint not found" });
   return sprint;
 };
 
-const checkTeamExists = async (teamId) => {
+const checkTeamExists = async (req, res, teamId) => {
   const team = await prisma.teamOffer.findUnique({ where: { id: teamId } });
   if (!team)
-    res.status(404).json({ status: "fail", message: "Team not found" });
+    return res.status(404).json({ status: "fail", message: "Team not found" });
   return team;
 };
 
@@ -29,8 +33,8 @@ exports.createSprint = async (req, res) => {
   const { projectId } = req.params;
   const { title, description, startDate, endDate, status, teamId } = req.body;
 
-  await checkProjectExists(projectId);
-  await checkTeamExists(teamId);
+  await checkProjectExists(req, res, projectId);
+  await checkTeamExists(req, res, teamId);
 
   const sprint = await prisma.sprint.create({
     data: {
@@ -50,14 +54,13 @@ exports.createSprint = async (req, res) => {
 exports.getSprintsByProject = async (req, res) => {
   const { projectId } = req.params;
 
-  await checkProjectExists(projectId);
+  await checkProjectExists(req, res, projectId);
 
   const sprints = await prisma.sprint.findMany({
     where: { projectOfferId: projectId },
     orderBy: { startDate: "asc" },
     include: {
       team: true,
-      // project: true,
     },
   });
 
@@ -71,7 +74,7 @@ exports.getSprintsByProject = async (req, res) => {
 exports.getSprint = async (req, res) => {
   const { sprintId } = req.params;
 
-  const sprint = await checkSprintExists(sprintId);
+  const sprint = await checkSprintExists(req, res, sprintId);
 
   res.status(200).json({ status: "success", data: { sprint } });
 };
@@ -80,7 +83,7 @@ exports.updateSprint = async (req, res) => {
   const { sprintId } = req.params;
   const data = req.body;
 
-  await checkSprintExists(sprintId);
+  await checkSprintExists(req, res, sprintId);
 
   const sprint = await prisma.sprint.update({
     where: { id: sprintId },
@@ -93,7 +96,7 @@ exports.updateSprint = async (req, res) => {
 exports.deleteSprint = async (req, res) => {
   const { sprintId } = req.params;
 
-  await checkSprintExists(sprintId);
+  await checkSprintExists(req, res, sprintId);
 
   await prisma.sprint.delete({ where: { id: sprintId } });
 

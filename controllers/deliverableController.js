@@ -21,7 +21,8 @@ exports.addDeliverable = async (req, res) => {
   const senderId = req.user.id;
   const file = req.file;
 
-  console.log("File received:", req.body); // Log the file information
+  console.log("File received:", req.file); // Log the file information
+
   try {
     const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
     if (!sprint) {
@@ -38,8 +39,6 @@ exports.addDeliverable = async (req, res) => {
       const uploadResult = await cloudinaryService.uploadFile(file.path, {
         folder: `deliverables/${senderId}/${sprintId}`,
       });
-      console.log("File uploaded to Cloudinary:", uploadResult);
-
       if (uploadResult.success) {
         fileUrl = uploadResult.url;
         cloudinaryPublicId = uploadResult.publicId;
@@ -65,6 +64,7 @@ exports.addDeliverable = async (req, res) => {
 
     res.status(201).json({ success: true, data: deliverable });
   } catch (error) {
+    // console.error("Error adding deliverable:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
