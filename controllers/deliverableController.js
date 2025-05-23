@@ -7,6 +7,7 @@ exports.getDeliverables = async (req, res) => {
   try {
     const deliverables = await prisma.deliverable.findMany({
       where: { sprintId },
+      include: { sender: true },
     });
 
     res.status(200).json({ success: true, data: deliverables });

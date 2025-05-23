@@ -11,6 +11,8 @@ router.use(restrictTo("student", "teacher", "admin"));
 
 router.route("/").post(sprintController.createSprint);
 
+// TODO: ensure that only the teamMember and the teacher of the project can access this routes
+
 router.route("").get(sprintController.getSprintsByProject); // here we should add query params to filter by teamId and if the student is not a team member or not the teacher of the prject , we should return an error 403
 
 router
