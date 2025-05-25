@@ -272,7 +272,7 @@ exports.getMyProjectOffer = async (req, res) => {
             user: true,
           },
         },
-        assignedTeams: true,
+        assignedTeams: true, // this will include the assigned teams
       },
     });
 
