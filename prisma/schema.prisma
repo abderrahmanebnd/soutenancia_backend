@@ -9,18 +9,20 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  firstName      String    @db.VarChar(40)
-  lastName       String?   @db.VarChar(40)
+  id             String        @id @default(cuid())
+  firstName      String        @db.VarChar(40)
+  lastName       String?       @db.VarChar(40)
   password       String
-  email          String    @unique @db.VarChar(100)
-  role           Role      @default(student)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  email          String        @unique @db.VarChar(100)
+  role           Role          @default(student)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   resetOtpHash   String?
   resetOtpExpiry DateTime?
   Student        Student?
   Teacher        Teacher?
+  Note           Note[]
+  Deliverable    Deliverable[]
 }
 
 model Student {
@@ -82,6 +84,7 @@ model TeamOffer {
 
   assignedProjectId String?
   assignedProject   ProjectOffer? @relation(fields: [assignedProjectId], references: [id])
+  Sprint            Sprint[]
 }
 
 model TeamApplication {
@@ -138,18 +141,18 @@ model Teacher {
 }
 
 model ProjectOffer {
-  id             String          @id @default(cuid())
-  title          String          @db.VarChar(150)
-  description    String          @db.VarChar(1000)
-  tools          String[]
-  languages      String[]
-  status         TeamOfferStatus @default(open)
-  maxTeamsNumber Int             @default(1)
-  year           Int?
-  fileUrl           String?    @db.VarChar(255)
-  cloudinaryPublicId String?    @db.VarChar(255)
-  teacherId      String
-  teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  id                 String          @id @default(cuid())
+  title              String          @db.VarChar(150)
+  description        String          @db.VarChar(1000)
+  tools              String[]
+  languages          String[]
+  status             TeamOfferStatus @default(open)
+  maxTeamsNumber     Int             @default(1)
+  year               Int?
+  fileUrl            String?         @db.VarChar(255)
+  cloudinaryPublicId String?         @db.VarChar(255)
+  teacherId          String
+  teacher            Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   coSupervisors Teacher[] @relation("ProjectCoSupervisors")
 
@@ -161,6 +164,7 @@ model ProjectOffer {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   assignedTeams TeamOffer[]
+  Sprint        Sprint[]
 }
 
 model ProjectApplication {
@@ -190,6 +194,58 @@ model ProjectSelectionWindow {
   updatedAt    DateTime   @updatedAt
 }
 
+model Sprint {
+  id          String       @id @default(cuid())
+  title       String       @db.VarChar(100)
+  description String?      @db.VarChar(1000)
+  startDate   DateTime
+  endDate     DateTime
+  status      SprintStatus @default(planned)
+
+  teamOfferId String
+  team        TeamOffer @relation(fields: [teamOfferId], references: [id], onDelete: Cascade)
+
+  projectOfferId String
+  project        ProjectOffer @relation(fields: [projectOfferId], references: [id], onDelete: Cascade)
+
+  notes        Note[]
+  deliverables Deliverable[]
+}
+
+model Deliverable {
+  id                 String  @id @default(cuid())
+  title              String? @db.VarChar(100)
+  description        String? @db.VarChar(1000)
+  fileUrl            String  @db.VarChar(255)
+  cloudinaryPublicId String  @db.VarChar(255)
+
+  sprintId String
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  senderId String // teacher or student id
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id      String @id @default(cuid())
+  content String @db.VarChar(1000)
+
+  sprintId String
+  sprint   Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sprintId])
+  @@index([senderId])
+}
+
 model YearAssignmentType {
   id             String         @id @default(cuid())
   year           Int            @unique
@@ -210,6 +266,12 @@ model Speciality {
   ProjectSelectionWindow ProjectSelectionWindow[]
 
   @@unique([name, year])
+}
+
+enum SprintStatus {
+  planned
+  active
+  completed
 }
 
 enum AssignmentType {
