@@ -37,6 +37,7 @@ exports.createProjectOffer = async (req, res) => {
       typeof chosedTeamsIds === "string"
         ? JSON.parse(chosedTeamsIds)
         : chosedTeamsIds;
+
     const teacher = await prisma.teacher.findUnique({
       where: { userId: req.user.id },
     });
@@ -140,7 +141,7 @@ exports.createProjectOffer = async (req, res) => {
       maxTeamsNumber: parseInt(maxTeamsNumber, 10),
       fileUrl,
       cloudinaryPublicId,
-      year,
+      year: Number(year),
       teacherId: teacher.id,
       assignmentType,
       specialities: {
