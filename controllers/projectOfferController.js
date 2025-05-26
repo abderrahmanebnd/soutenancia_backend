@@ -137,7 +137,7 @@ exports.createProjectOffer = async (req, res) => {
       maxTeamsNumber: parseInt(maxTeamsNumber, 10),
       fileUrl,
       cloudinaryPublicId,
-      year: selectedYear,
+      year,
       teacherId: teacher.id,
       assignmentType,
       specialities: {
