@@ -33,17 +33,28 @@ const buildPrismaQuery = (queryParams) => {
   }
 
   if (search && searchFields) {
-    const searchTerms = search.split(" ").filter(Boolean);
-    const fieldsToSearch = searchFields.split(",");
+  const searchTerms = search.split(" ").filter(Boolean);
+  const fieldsToSearch = searchFields.split(",");
 
-    if (searchTerms.length > 0 && fieldsToSearch.length > 0) {
-      query.where.OR = searchTerms.flatMap((term) =>
-        fieldsToSearch.map((field) => ({
-          [field]: { contains: term, mode: "insensitive" },
-        }))
-      );
-    }
+  if (searchTerms.length > 0 && fieldsToSearch.length > 0) {
+    query.where.OR = searchTerms.flatMap((term) =>
+      fieldsToSearch.map((field) => {
+        if (field.includes(".")) {
+          const [relation, nestedField] = field.split(".");
+          return {
+            [relation]: {
+              [nestedField]: { contains: term, mode: "insensitive" }
+            }
+          };
+        } else {
+          return {
+            [field]: { contains: term, mode: "insensitive" }
+          };
+        }
+      })
+    );
   }
+}
 
   Object.keys(filters).forEach((key) => {
     // Handle special cases for filters
