@@ -6,7 +6,7 @@ const yearAssignmentTypeController = require("../controllers/assignmentTypeContr
 router.use(authController.protect);
 router.get("/", yearAssignmentTypeController.getYearAssignmentTypes);
 
-router.use(authController.restrictTo("admin")); 
+router.use(authController.restrictTo("admin"));
 router.post("/", yearAssignmentTypeController.createYearAssignmentType);
 router.patch("/:id", yearAssignmentTypeController.updateYearAssignmentType);
 router.delete("/:id", yearAssignmentTypeController.deleteYearAssignmentType);

@@ -47,7 +47,7 @@ router
     projectOfferController.updateProjectOffer
   )
   .get(
-    authController.restrictTo("teacher", "admin"),
+    authController.restrictTo("teacher", "admin", "student"),
     projectOfferController.getProjectOffer
   )
   .delete(
