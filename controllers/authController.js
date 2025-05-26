@@ -279,3 +279,20 @@ exports.restrictTo = (...roles) => {
     next();
   };
 };
+
+//hna rani nbedel valeut ta3 jwt b loggedout which is invalide w deconecte l user
+
+exports.logout = (req, res) => {
+  res.cookie("jwt", "loggedout", {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    path: "/",
+  });
+  
+  res.status(200).json({ 
+    status: "success",
+    message: "Logged out successfully" 
+  });
+};
