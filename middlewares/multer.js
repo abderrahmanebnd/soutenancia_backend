@@ -1,4 +1,3 @@
-// multer.js
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -12,6 +11,7 @@ try {
 } catch (error) {
   console.error("Erreur lors de la création du dossier uploads:", error);
 }
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
@@ -54,9 +54,45 @@ const upload = multer({
   },
 });
 
-exports.uploadSingle = upload.single("file");
+// Configuration pour les fichiers Excel
+const excelStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = "uploads/excel";
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
 
-exports.handleMulterError = (err, req, res, next) => {
+const excelFileFilter = (req, file, cb) => {
+  const allowedMimes = [
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Seuls les fichiers Excel (.xls, .xlsx) sont autorisés"), false);
+  }
+};
+
+const uploadExcel = multer({
+  storage: excelStorage,
+  fileFilter: excelFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
+  },
+});
+
+const uploadSingle = upload.single("file");
+
+const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
@@ -80,7 +116,7 @@ exports.handleMulterError = (err, req, res, next) => {
   next();
 };
 
-exports.cleanupFile = (filePath) => {
+const cleanupFile = (filePath) => {
   try {
     if (filePath && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -90,8 +126,17 @@ exports.cleanupFile = (filePath) => {
   }
 };
 
-// Middleware to clean up the file if an error occurs after upload
-exports.cleanupOnError = (req, res, next) => {
+const cleanupExcelFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error("Erreur lors de la suppression du fichier:", error);
+  }
+};
+
+const cleanupOnError = (req, res, next) => {
   // Stocker la fonction originale res.json
   const originalJson = res.json;
 
@@ -99,7 +144,7 @@ exports.cleanupOnError = (req, res, next) => {
   res.json = function (body) {
     // Si la réponse est une erreur (status >= 400) et qu'un fichier existe
     if (res.statusCode >= 400 && req.file) {
-      exports.cleanupFile(req.file.path);
+      cleanupFile(req.file.path);
     }
 
     // Appeler la fonction originale
@@ -107,4 +152,14 @@ exports.cleanupOnError = (req, res, next) => {
   };
 
   next();
+};
+
+// Export complet avec toutes les fonctions
+module.exports = {
+  uploadSingle,
+  handleMulterError,
+  cleanupFile,
+  cleanupOnError,
+  uploadExcel: uploadExcel.single("excelFile"),
+  cleanupExcelFile,
 };

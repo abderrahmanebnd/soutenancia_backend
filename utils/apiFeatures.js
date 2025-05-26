@@ -33,28 +33,28 @@ const buildPrismaQuery = (queryParams) => {
   }
 
   if (search && searchFields) {
-  const searchTerms = search.split(" ").filter(Boolean);
-  const fieldsToSearch = searchFields.split(",");
+    const searchTerms = search.split(" ").filter(Boolean);
+    const fieldsToSearch = searchFields.split(",");
 
-  if (searchTerms.length > 0 && fieldsToSearch.length > 0) {
-    query.where.OR = searchTerms.flatMap((term) =>
-      fieldsToSearch.map((field) => {
-        if (field.includes(".")) {
-          const [relation, nestedField] = field.split(".");
-          return {
-            [relation]: {
-              [nestedField]: { contains: term, mode: "insensitive" }
-            }
-          };
-        } else {
-          return {
-            [field]: { contains: term, mode: "insensitive" }
-          };
-        }
-      })
-    );
+    if (searchTerms.length > 0 && fieldsToSearch.length > 0) {
+      query.where.OR = searchTerms.flatMap((term) =>
+        fieldsToSearch.map((field) => {
+          if (field.includes(".")) {
+            const [relation, nestedField] = field.split(".");
+            return {
+              [relation]: {
+                [nestedField]: { contains: term, mode: "insensitive" },
+              },
+            };
+          } else {
+            return {
+              [field]: { contains: term, mode: "insensitive" },
+            };
+          }
+        })
+      );
+    }
   }
-}
 
   Object.keys(filters).forEach((key) => {
     // Handle special cases for filters
@@ -79,18 +79,18 @@ const buildPrismaQuery = (queryParams) => {
       // Less than or equal filter
       const field = key.replace("_lte", "");
       query.where[field] = { lte: filters[key] };
-    } else if (key.endsWith("_in")) {
-      // In array filter
-      const field = key.replace("_in", "");
-      const values = filters[key].split(",");
-      query.where[field] = { in: values };
-    } else if (key.endsWith("_contains")) {
-      // Contains text filter
-      const field = key.replace("_contains", "");
-      query.where[field] = { contains: filters[key], mode: "insensitive" };
     } else {
-      // Default exact match filter
-      query.where[key] = filters[key];
+      // Handle boolean values and regular filters
+      let value = filters[key];
+
+      // Convert string booleans to actual booleans
+      if (value === "true") {
+        value = true;
+      } else if (value === "false") {
+        value = false;
+      }
+
+      query.where[key] = value;
     }
   });
 

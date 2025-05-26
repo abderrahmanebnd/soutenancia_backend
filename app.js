@@ -13,6 +13,7 @@ const teamApplicationRouter = require("./routes/teamApplicationRoutes");
 const projectSelectionWindowRoutes = require("./routes/ProjectSelectionWindowRoutes");
 const projectApplicationRoutes = require("./routes/projectApplicationRoutes");
 const skillRoutes = require("./routes/skillRoutes");
+const importRoutes = require("./routes/importRoutes");
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use(
   require("./routes/deliverableRoutes")
 );
 
+app.use("/api/v1/import", importRoutes);
 
 app.all("*", (req, res) => {
   return res.status(404).json({
