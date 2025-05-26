@@ -18,6 +18,7 @@ exports.createProjectOffer = async (req, res) => {
     } = req.body;
 
     // parsing json data
+    year = Number(year);
     const tools =
       typeof toolsInput === "string" ? JSON.parse(toolsInput) : toolsInput;
     const languages =
@@ -33,6 +34,10 @@ exports.createProjectOffer = async (req, res) => {
       (typeof coSupervisorsInput === "string"
         ? JSON.parse(coSupervisorsInput)
         : coSupervisorsInput);
+    chosedTeamsIds =
+      typeof chosedTeamsIds === "string"
+        ? JSON.parse(chosedTeamsIds)
+        : chosedTeamsIds;
 
     const teacher = await prisma.teacher.findUnique({
       where: { userId: req.user.id },
@@ -137,7 +142,7 @@ exports.createProjectOffer = async (req, res) => {
       maxTeamsNumber: parseInt(maxTeamsNumber, 10),
       fileUrl,
       cloudinaryPublicId,
-      year: selectedYear,
+      year: parseInt(year),
       teacherId: teacher.id,
       assignmentType,
       specialities: {
@@ -272,7 +277,7 @@ exports.getMyProjectOffer = async (req, res) => {
             user: true,
           },
         },
-        assignedTeams: true,
+        assignedTeams: true, // this will include the assigned teams
       },
     });
 

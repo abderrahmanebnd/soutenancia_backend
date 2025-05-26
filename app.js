@@ -53,7 +53,21 @@ app.use("/api/v1", projectApplicationRoutes);
 
 app.use("/api/v1/projectsOffers", require("./routes/projectOfferRoutes"));
 
+
 app.use('/api/v1/skills', skillRoutes);
+
+app.use(
+  "/api/v1/projects/:projectId/sprints",
+  require("./routes/sprintRoutes")
+);
+
+app.use("/api/v1/sprints/:sprintId/notes", require("./routes/noteRoutes"));
+
+app.use(
+  "/api/v1/sprints/:sprintId/deliverables",
+  require("./routes/deliverableRoutes")
+);
+
 
 app.all("*", (req, res) => {
   return res.status(404).json({
