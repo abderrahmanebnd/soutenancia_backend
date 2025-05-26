@@ -18,6 +18,7 @@ exports.createProjectOffer = async (req, res) => {
     } = req.body;
 
     // parsing json data
+    year = Number(year);
     const tools =
       typeof toolsInput === "string" ? JSON.parse(toolsInput) : toolsInput;
     const languages =
