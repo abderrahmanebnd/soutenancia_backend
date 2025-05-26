@@ -33,7 +33,10 @@ exports.createProjectOffer = async (req, res) => {
       (typeof coSupervisorsInput === "string"
         ? JSON.parse(coSupervisorsInput)
         : coSupervisorsInput);
-
+    chosedTeamsIds =
+      typeof chosedTeamsIds === "string"
+        ? JSON.parse(chosedTeamsIds)
+        : chosedTeamsIds;
     const teacher = await prisma.teacher.findUnique({
       where: { userId: req.user.id },
     });
