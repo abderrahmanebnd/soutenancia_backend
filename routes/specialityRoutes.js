@@ -8,7 +8,12 @@ router
   .get(authController.protect, specialityController.getAllSpecialities);
 
 router.use(authController.protect); // TODO:restrict this to admin
-router.route("/").post(specialityController.createSpeciality);
+router
+  .route("/")
+  .post(
+    authController.restrictTo("admin"),
+    specialityController.createSpeciality
+  );
 
 router
   .route("/:id")

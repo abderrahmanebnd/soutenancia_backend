@@ -10,6 +10,7 @@ const authController = require("../controllers/authController");
 
 router.use(authController.protect);
 
+//getAllProjectOffers is used twice
 router.route("/").get(projectOfferController.getAllProjectOffers);
 
 router

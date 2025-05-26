@@ -1,5 +1,6 @@
 const catchAsync = require("../utils/catchAsync.js");
 const prisma = require("../prisma/prismaClient.js");
+const genericController = require("./genericController");
 
 exports.getAllSkills = catchAsync(async (req, res, next) => {
   const skills = await prisma.skill.findMany({
@@ -82,4 +83,32 @@ exports.addSkills = catchAsync(async (req, res, next) => {
     status: "success",
     data: updatedStudent,
   });
+});
+
+//getting student
+exports.getAllStudents = genericController.createListHandler("student", {
+  include: {
+    user: true,
+    speciality: true,
+    skills: {
+      include: {
+        skill: true,
+      },
+    },
+    TeamMember: true,
+  },
+  defaultSort: { user: { firstName: "asc" } },
+});
+
+exports.getStudent = genericController.createGetOneHandler("student", {
+  include: {
+    user: true,
+    speciality: true,
+    skills: {
+      include: {
+        skill: true,
+      },
+    },
+    TeamMember: true,
+  },
 });

@@ -12,6 +12,7 @@ const teamOfferRouter = require("./routes/teamOfferRoutes");
 const teamApplicationRouter = require("./routes/teamApplicationRoutes");
 const projectSelectionWindowRoutes = require("./routes/ProjectSelectionWindowRoutes");
 const projectApplicationRoutes = require("./routes/projectApplicationRoutes");
+const skillRoutes = require("./routes/skillRoutes");
 
 const app = express();
 
@@ -52,6 +53,9 @@ app.use("/api/v1", projectApplicationRoutes);
 
 app.use("/api/v1/projectsOffers", require("./routes/projectOfferRoutes"));
 
+
+app.use('/api/v1/skills', skillRoutes);
+
 app.use(
   "/api/v1/projects/:projectId/sprints",
   require("./routes/sprintRoutes")
@@ -63,6 +67,7 @@ app.use(
   "/api/v1/sprints/:sprintId/deliverables",
   require("./routes/deliverableRoutes")
 );
+
 
 app.all("*", (req, res) => {
   return res.status(404).json({
