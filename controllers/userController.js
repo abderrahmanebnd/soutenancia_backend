@@ -37,7 +37,12 @@ exports.getMe = catchAsync(async (req, res, next) => {
           isCompletedProfile: true,
           TeamMember: {
             select: {
-              teamOfferId: true,
+              teamOffer: {
+                select: {
+                  id: true,
+                  assignedProjectId: true,
+                },
+              },
             },
           },
           TeamOffer: {
