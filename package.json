@@ -12,7 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
     "convert-excel-to-json": "^1.7.0",
