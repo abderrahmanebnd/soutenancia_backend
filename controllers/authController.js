@@ -51,7 +51,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     title,
   } = req.body;
 
-  if (role && !["student", "teacher", "entreprise", "admin"].includes(role)) {
+  if (role && !["student", "teacher", "entreprise"].includes(role)) {
     return res.status(400).json({
       status: "fail",
       message: "Role must be either student, teacher or entreprise",
@@ -290,9 +290,9 @@ exports.logout = (req, res) => {
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     path: "/",
   });
-  
-  res.status(200).json({ 
+
+  res.status(200).json({
     status: "success",
-    message: "Logged out successfully" 
+    message: "Logged out successfully",
   });
 };
